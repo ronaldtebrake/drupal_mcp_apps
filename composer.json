@@ -6,7 +6,13 @@
   "require": {
     "php": ">=8.3",
     "drupal/core": "^11",
-    "drupal/mcp_server": "^2.0@beta",
-    "mcp/sdk": "^0.7.1"
+    "drupal/mcp_server": "2.0.0-beta5",
+    "mcp/sdk": "^0.7.1",
+    "drupal/tool": "1.0.0-beta8",
+    "drupal/mcp_server_tool_bridge": "1.0.0-beta3",
+    "drupal/mcp_server_oauth-mcp_server_oauth": "^1.0@alpha",
+    "drupal/simple_oauth": "^6.1",
+    "e0ipso/simple_oauth_21": "^1.13",
+    "cweagans/composer-patches": "^2.0"
   }
 }

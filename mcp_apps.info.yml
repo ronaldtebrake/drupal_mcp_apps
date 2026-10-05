@@ -5,6 +5,12 @@ package: MCP
 core_version_requirement: ^11
 dependencies:
   - mcp_server:mcp_server
+  - tool:tool
+  - mcp_server_tool_bridge:mcp_server_tool_bridge
+  - mcp_server_oauth:mcp_server_oauth
+  - simple_oauth_21:simple_oauth_pkce
+  - simple_oauth_21:simple_oauth_native_apps
+  - drupal:text
   - drupal:node
   - drupal:media
   - drupal:image

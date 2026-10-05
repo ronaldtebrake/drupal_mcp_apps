@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ * Registers the demo resource provider using MCP Server configuration.
+ */
+
+declare(strict_types=1);
+
+/**
+ * Implements hook_install().
+ */
+function mcp_apps_install(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  $plugins['mcp_apps_media_picker'] = [
+    'id' => 'mcp_apps_media_picker',
+    'enabled' => TRUE,
+    'configuration' => [],
+  ];
+  $config->set('plugins', $plugins)->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mcp_apps_uninstall(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  unset($plugins['mcp_apps_media_picker']);
+  $config->set('plugins', $plugins)->save();
+}

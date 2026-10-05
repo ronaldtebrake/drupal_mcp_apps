@@ -1,5 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { TextEncoder, TextDecoder } from 'node:util';
 import { JSDOM, VirtualConsole } from 'jsdom';
 
@@ -13,7 +15,7 @@ const waitFor = async (predicate, label) => {
 
 async function setup(demo) {
   const html = await readFile(new URL(`../dist/${demo}.html`, import.meta.url), 'utf8');
-  const fixture = JSON.parse(await readFile(`/tmp/${demo}-fixture.json`, 'utf8'));
+  const fixture = JSON.parse(await readFile(join(tmpdir(), `${demo}-fixture.json`), 'utf8'));
   const requests = []; const errors = []; const logs = new VirtualConsole();
   logs.on('jsdomError', (error) => errors.push(error));
   const dom = new JSDOM(html, {
@@ -30,7 +32,7 @@ async function setup(demo) {
           reply({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: fixture });
         } else if (request.method === 'tools/call') {
           const result = structuredClone(fixture);
-          if (request.params.name === 'media_picker_save_hero') {
+          if (request.params.name === 'tool_api__media_picker_save_hero') {
             const args = request.params.arguments;
             const post = fixture.structuredContent.posts.find((item) => item.id === args.node_id);
             result.structuredContent = { app: 'media-picker-hero-saved', post: { ...post, hero: { id: args.media_id, name: 'New hero' }, alt: args.alt, revision: 'new-revision' }, message: 'Hero saved as a new revision.' };
@@ -75,7 +77,7 @@ try {
   doc.querySelector('#show-proposed').click();
   doc.querySelector('#confirm-hero').click();
   await waitFor(() => doc.querySelector('#selection-feedback').textContent.includes('saved'), 'hero save');
-  const save = requests.find((request) => request.method === 'tools/call' && request.params.name === 'media_picker_save_hero');
+  const save = requests.find((request) => request.method === 'tools/call' && request.params.name === 'tool_api__media_picker_save_hero');
   assert.equal(save.params.arguments.alt, alt);
   assert.equal(save.params.arguments.media_id, item.id);
   assert.equal(save.params.arguments.node_id, fixture.structuredContent.posts[0].id);
@@ -87,7 +89,7 @@ try {
   doc.querySelector('#search-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
   await waitFor(() => requests.some((request) => request.method === 'tools/call'), 'media server search');
   await waitFor(() => doc.querySelector('#result-count').textContent.includes('matching') && !doc.querySelector('#search-drupal').disabled, 'media search completion');
-  assert.equal(requests.find((request) => request.method === 'tools/call' && request.params.name === 'media_picker_open').params.arguments.query, 'Rotterdam');
+  assert.equal(requests.find((request) => request.method === 'tools/call' && request.params.name === 'tool_api__media_picker_open').params.arguments.query, 'Rotterdam');
   assert.equal(errors.length, 0, errors.map((error) => error.message).join('\n'));
   console.log('PASS: Media SDK handshake, inline images, article preview, current/proposed toggle, review before save and server search.');
 } finally { media.dom.window.close(); }

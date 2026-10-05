@@ -3,11 +3,20 @@
 import json
 import select
 import subprocess
+import os
+from pathlib import Path
+import tempfile
 
+
+root = Path(os.environ.get('DRUPAL_ROOT', os.getcwd()))
+site_url = os.environ.get('DRUPAL_BASE_URL') or os.environ.get('DDEV_PRIMARY_URL')
+command = [str(root / 'vendor/bin/drush'), 'mcp:server', os.environ.get('DRUPAL_USER', 'admin')]
+if site_url:
+    command.append('--uri=' + site_url)
 
 process = subprocess.Popen(
-    ["vendor/bin/drush", "mcp:server", "admin"],
-    cwd="/var/www/html",
+    command,
+    cwd=root,
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
@@ -58,9 +67,9 @@ try:
     assert "content_atlas_draft" not in tools
     assert "show_test_app" not in tools
     assert "canvas_composer_open" not in tools
-    assert tools['media_picker_save_hero']['_meta']['ui']['visibility'] == ['app']
-    assert tools['media_picker_save_hero']['annotations']['readOnlyHint'] is False
-    for name, demo in [("media_picker_open", "media-picker")]:
+    assert tools['tool_api__media_picker_save_hero']['_meta']['ui']['visibility'] == ['app']
+    assert tools['tool_api__media_picker_save_hero']['annotations']['readOnlyHint'] is False
+    for name, demo in [("tool_api__media_picker_open", "media-picker")]:
         uri = "ui://drupal/" + demo
         assert tools[name]["_meta"]["ui"]["resourceUri"] == uri
         assert tools[name]["annotations"]["readOnlyHint"] is True
@@ -68,7 +77,8 @@ try:
         assert not result.get("isError"), result
         data = result["structuredContent"]
         assert data["app"] == demo
-        assert data["origin"] == "https://webmcp-integration.ddev.site"
+        if site_url:
+            assert data["origin"] == site_url.rstrip("/")
         assert len(result["content"]) == 2, "Text-only hosts need the data too."
         if demo == "media-picker":
             assert len(data["media"]) >= 6
@@ -84,21 +94,23 @@ try:
         if demo == "media-picker":
             assert "__MEDIA_THUMBNAILS__" in content["text"]
             assert "base64," in content["text"], "Resource carries thumbnails if host omits tool result metadata."
-        with open("/tmp/" + demo + "-fixture.json", "w", encoding="utf-8") as fixture:
+        with open(Path(tempfile.gettempdir()) / (demo + "-fixture.json"), "w", encoding="utf-8") as fixture:
             json.dump(result, fixture)
         print(f"PASS: {name}, structured data, textual fallback, HTML/MIME/CSP and real SDK dispatch.")
-    search = request("tools/call", {"name": "media_picker_open", "arguments": {"query": "Rotterdam"}})
+    search = request("tools/call", {"name": "tool_api__media_picker_open", "arguments": {"query": "Rotterdam"}})
     assert len(search["structuredContent"]["media"]) == 4
-    article = request('tools/call', {'name': 'media_picker_open', 'arguments': {'article_title': 'weekend of discovery', 'query': 'Conference'}})
+    article = request('tools/call', {'name': 'tool_api__media_picker_open', 'arguments': {'article_title': 'weekend of discovery', 'query': 'Conference'}})
     assert article['structuredContent']['node_id'] > 0
     assert article['structuredContent']['hero_media'], 'Current hero survives a filtered library search.'
-    invalid = request("tools/call", {"name": "media_picker_open", "arguments": {"node_id": -1}})
+    invalid = request("tools/call", {"name": "tool_api__media_picker_open", "arguments": {"node_id": -1}})
     assert invalid["isError"] is True
     resources = request("resources/list", {})
     assert [item['uri'] for item in resources['resources'] if item['uri'].startswith('ui://drupal/')] == ['ui://drupal/media-picker']
-    assert {name for name, tool in tools.items() if tool.get('_meta', {}).get('ui', {}).get('resourceUri', '').startswith('ui://drupal/')} == {'media_picker_open', 'media_picker_save_hero'}
+    assert {name for name, tool in tools.items() if tool.get('_meta', {}).get('ui', {}).get('resourceUri', '').startswith('ui://drupal/')} == {'tool_api__media_picker_open', 'tool_api__media_picker_save_hero'}
     print("PASS: media search, article lookup, invalid input and the media-only app catalogue.")
-    print("Factory Apps advertisement:", initialization["capabilities"].get("extensions", "absent: documented upstream gap"))
+    assert initialization["capabilities"]["extensions"]["io.modelcontextprotocol/ui"]["mimeTypes"] == ["text/html;profile=mcp-app"]
+    assert "ui" in next(item for item in resources["resources"] if item["uri"] == "ui://drupal/media-picker")["_meta"]
+    print("PASS: native Tool API bridge metadata and MCP Apps extension advertisement.")
 finally:
     process.terminate()
     try:

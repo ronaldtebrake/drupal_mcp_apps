@@ -45,6 +45,12 @@ foreach ($registry['files'] ?? [] as $id => $uuid) {
 }
 $retained_bundles = [];
 foreach ($registry['config'] ?? [] as $name => $uuid) {
+  if (str_starts_with($name, 'media.type.')) {
+    $bundle = substr($name, strlen('media.type.'));
+    if (\Drupal::entityQuery('media')->accessCheck(FALSE)->condition('bundle', $bundle)->count()->execute()) {
+      $retained_bundles[$bundle] = TRUE;
+    }
+  }
   if (str_starts_with($name, 'node.type.')) {
     $bundle = substr($name, strlen('node.type.'));
     if (\Drupal::entityQuery('node')->accessCheck(FALSE)->condition('type', $bundle)->count()->execute()) {
@@ -55,6 +61,9 @@ foreach ($registry['config'] ?? [] as $name => $uuid) {
 foreach ($registry['config'] ?? [] as $name => $uuid) {
   $entity = \Drupal::service('config.manager')->loadConfigEntityByName($name);
   if ($entity === NULL || $entity->uuid() !== $uuid) {
+    continue;
+  }
+  if ($entity->getEntityTypeId() === 'media_type' && \Drupal::entityQuery('media')->accessCheck(FALSE)->condition('bundle', $entity->id())->count()->execute()) {
     continue;
   }
   if (str_starts_with($name, 'node.type.') && isset($retained_bundles[$entity->id()])) {

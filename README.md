@@ -1,96 +1,198 @@
 # Drupal MCP Apps Media picker
 
-An interactive Media picker and article hero workflow using Drupal data and the official MCP Apps SDKs. The module is a proof of concept for upstream MCP Server / Tool API bridge issues, not a new app framework.
+**AI disclosure:** This module, its local patches, and this documentation were developed with assistance from OpenAI Codex. The implementation is a proof of concept backed by automated tests; the proposed contrib APIs have not been merged upstream.
 
-## Test in an MCP Apps host
+A visual article-editing workflow that demonstrates MCP Apps through **Drupal Tool API**, **MCP Server Tool Bridge**, and **MCP Server**. Ask an MCP Apps host to update an article's hero, browse Drupal Media, preview the proposed crop, and confirm a new draft revision.
 
-Call the tool through the existing Drupal MCP connection:
+The module includes its HTML/JavaScript bundle and sample photos. Installation does not require Node.js, an existing content type, an existing Media type, or this repository author's development site.
 
-```text
-media_picker_open {}
-```
+## Install on a separate Drupal site
 
-After enabling or changing discovery, rebuild Drupal caches and refresh the host connection's tool catalogue.
+Use Drupal 11, PHP 8.3+, Composer 2, Git, and the PHP extensions required by Drupal, including GD and OpenSSL. Serve Drupal's `web/` directory at an HTTPS URL that your MCP host can reach.
 
-### Media Picker — article hero workflow
-
-- Real, access-checked Drupal image Media, with a searchable thumbnail grid.
-- Open an article by `node_id` or `article_title`. Two dedicated demo article drafts are seeded.
-- Compare current and proposed heroes using the same article card rendered on the demo node page. The app bundle and Drupal library share `ui/article.css`, and both use Drupal's `mcp_apps_hero` image style (1100 × 500, centred crop). Text wraps responsively to the available width. This is a dedicated demo presentation, not an imported Drupal CMS recipe.
-- The website displays article-specific alt text and tracks the referenced Media and image style in its render cache. Only full views of the demo article bundle use this presentation.
-- Select an image, edit article-specific alt text, then **Review hero change** and **Save hero to article**. The app-only `media_picker_save_hero` tool creates a new revision, preserving article title/body and draft status. Shared Media alt text is unchanged.
-- The first implementation supports the dedicated, unmoderated demo article bundle only. Published content and stale revisions are rejected. Arbitrary site bundles and moderation transitions need a later integration step.
-- Choose no article to use the original **Use this media** chat handoff without saving.
-- Local search responds immediately; **Search Drupal** calls the server again.
-- Sample photos are labelled and attributed. They are stock imagery, not actual DrupalCon coverage. Access-checked Drupal image derivatives travel as data URLs in tool-result `_meta`, so the app does not need network access to a local DDEV site. Private files are omitted; image bytes stay outside model-visible structured data. Thumbnail payloads are bounded; external Drupal URLs remain a fallback for omitted thumbnails.
-
-Example: `media_picker_open {"article_title":"weekend of discovery"}` or `media_picker_open {"node_id":186}` in this sandbox.
-
-Resource: `ui://drupal/media-picker`.
-
-## Implementation and upstream scope
-
-```text
-src/Mcp/MediaPicker.php       Tool + HTML resource, real Media search
-src/HeroArticle.php          Shared article text and website rendering
-templates/                   Demo article template
-src/Mcp/DemoSupport.php       SDK result/resource helpers and Drupal Fiber handling
-src/McpAppsServiceProvider.php  Existing mcp_server SDK discovery extension point
-ui/                          Frontends using @modelcontextprotocol/ext-apps
-dist/                        Self-contained, offline JavaScript app bundles
-assets/                      Attributed sample photos and source manifest
-```
-
-Tools advertise `_meta.ui.resourceUri`; resources return `text/html;profile=mcp-app` and content CSP metadata. Tools use structured results plus useful text/JSON fallback. No WebMCP dependency, manual MCP protocol implementation, or host iframe renderer is included.
-
-The current demo uses **SDK attribute discovery**, because the native Drupal Tool attribute and ToolDefinition cannot yet carry arbitrary metadata. The factory also drops resource-definition metadata and does not advertise the Apps protocol extension. These upstream gaps are documented in [MCP_SERVER_ISSUE.md](MCP_SERVER_ISSUE.md); this module does not patch contrib code or claim those gaps are resolved.
-
-Tool API's bridge already returns structuredContent. A related issue should establish a metadata contract and preserve app resource links when Tool API definitions become MCP derivatives. These demo tools currently use SDK attributes directly, not Tool API plugins. Keeping that distinction explicit makes the issue evidence reproducible.
-
-## Setup
-
-From the DDEV site root:
+For a new project:
 
 ```sh
-ddev exec 'cd web/modules/custom/mcp_apps && npm ci && npm run build'
-ddev drush en mcp_apps -y
-ddev drush php:script web/modules/custom/mcp_apps/tests/seed_demos.php
-ddev drush cr
+composer create-project drupal/recommended-project:^11 mcp-apps-demo
+cd mcp-apps-demo
 ```
 
-Requires an existing image Media type. Bundled assets are sufficient; `tests/fetch_demo_images.py` is an optional developer download helper. Sources and credits are stored in `assets/manifest.json`; the source pages identify the Unsplash license: https://unsplash.com/license.
+For an existing Drupal project, start in its Composer root instead. The examples below assume the standard `web/` document root and `web/modules/contrib/` installer path.
 
-The seed script creates six Media entities and public files and two article drafts with hero fields. It tracks IDs and UUIDs in state and refuses to populate untracked colliding bundles. It does not modify existing content types or publish sample nodes. Rerunning does not duplicate the samples.
+### 1. Download the module and its dependencies
 
-Run `tests/cleanup_demos.php` through `ddev drush php:script` to remove tracked sample data. Node-referenced media, files with usage, and bundles with additional content are retained.
-
-## Permissions
-
-Assign permissions under **People → Permissions** after enabling the module:
-
-- **Use the MCP Media picker** (`access mcp media picker`) allows the tool, HTML resource, and browser preview.
-- **Update article heroes through MCP** (`update mcp article hero`) additionally allows saving. Both permissions are required for saves.
-
-These permissions do not grant access to content. Drupal node view/update, Media/file view, and field view/edit access still apply. Anonymous and authenticated accounts without the picker permission are denied before content is loaded. A picker-only user can browse accessible content but cannot save. As usual, Drupal's superuser bypass applies. No role permissions are granted automatically. Access to the MCP endpoint is separately managed by MCP Server.
-
-## Verification
+The module is currently distributed through its GitHub repository. Alpha stability is needed for the OAuth companion; stable releases remain preferred.
 
 ```sh
-ddev exec vendor/bin/phpunit web/modules/custom/mcp_apps/tests/src
-ddev drush php:script web/modules/custom/mcp_apps/tests/backend_smoke.php
-ddev drush php:script web/modules/custom/mcp_apps/tests/hero_smoke.php
-ddev drush php:script web/modules/custom/mcp_apps/tests/article_presentation_smoke.php
-ddev exec python3 web/modules/custom/mcp_apps/tests/protocol_smoke.py
-ddev exec node web/modules/custom/mcp_apps/tests/ui-smoke.mjs
-ddev exec vendor/bin/phpcs --standard=Drupal,DrupalPractice web/modules/custom/mcp_apps/src web/modules/custom/mcp_apps/tests/seed_demos.php web/modules/custom/mcp_apps/tests/cleanup_demos.php web/modules/custom/mcp_apps/tests/backend_smoke.php
+composer config repositories.mcp_apps vcs https://github.com/ronaldtebrake/drupal_mcp_apps.git
+composer config minimum-stability alpha
+composer config prefer-stable true
+composer config allow-plugins.cweagans/composer-patches true
+composer require drupal/mcp_apps:dev-main drush/drush:^13 --with-all-dependencies
 ```
 
-The Drupal functional test installs an isolated site and checks anonymous and authenticated permission denials, read-only access, node and field restrictions, inaccessible Media, valid saves, stale/published draft rejection, unchanged content after denied writes, and preview HTTP 403/200 responses. It also runs the real MCP Server factory and SDK transport to verify authorized/denied tool calls and HTML resource reads. It uses ordinary users rather than uid 1. PHPUnit requires Drupal core-dev and the standard Drupal test database/base URL configuration (already configured in this DDEV sandbox).
+Composer installs MCP Server, Tool API, the bridge, MCP Server OAuth, Simple OAuth, its OAuth 2.1 extensions, and their dependencies. The `drupal/mcp_server_oauth-mcp_server_oauth` package name in composer.json is Drupal.org's packaged OAuth module, whose Drupal machine name is `mcp_server_oauth`.
 
-The protocol test calls the real MCP transport and writes fixtures under `/tmp` inside DDEV. UI tests use those fixtures with a simulated host and the actual bundled SDK. Backend smoke checks verify search and anonymous access restrictions; the hero smoke check uses a disposable article. Permission and Media access coverage runs on the isolated PHPUnit site.
+If your project prompts about standard Composer plugins such as `symfony/runtime` or `php-http/discovery`, configure them according to your project's Composer policy. Composer Patches must be allowed for the next step.
 
-Authenticated browser previews use the same UI and current-account data:
+### 2. Apply the bundled upstream patches
 
-- https://webmcp-integration.ddev.site/admin/content/mcp-apps/media-picker
+Run these commands before enabling the module:
 
-Previews allow local exploration only; chat handoff and server refresh controls require an MCP host. Preview responses are private/no-store with nonce CSP. Browser preview success is separate from actual MCP host initialization.
+```sh
+php web/modules/contrib/mcp_apps/scripts/configure_composer.php
+composer update drupal/mcp_server drupal/tool drupal/mcp_server_tool_bridge cweagans/composer-patches --no-interaction
+composer patches-relock
+composer patches-repatch
+```
+
+The helper merges the three local patches into the **site's root composer.json**, calculates their SHA-256 hashes, and preserves unrelated patches. The three contrib releases are pinned because these patches target specific release archives. `patches-repatch` reinstalls those packages and applies the patches through Composer.
+
+Commit your site's `composer.json`, `composer.lock`, and `patches.lock.json`. Bundled patch files live in this module's `patches/` directory. Local paths must be registered in the consuming project's root; dependency-relative patch paths are not supported by [Composer Patches](https://docs.cweagans.net/composer-patches/usage/defining-patches/).
+
+### 3. Install Drupal and enable the demo
+
+If Drupal is not installed yet, install it using the normal installer and your database settings. For a disposable SQLite demo with PDO SQLite available, one option is:
+
+```sh
+vendor/bin/drush site:install standard \
+  --db-url=sqlite://localhost/sites/default/files/.ht.sqlite \
+  --account-name=admin --site-name="MCP Apps demo" -y
+```
+
+Then enable the module and create the samples:
+
+```sh
+vendor/bin/drush en mcp_apps -y
+vendor/bin/drush php:script web/modules/contrib/mcp_apps/scripts/seed_demo.php
+vendor/bin/drush cr
+```
+
+Enabling `mcp_apps` also enables its MCP, Tool API, and OAuth dependencies, including authorization-server metadata, dynamic client registration, PKCE, and native-app support. It registers the HTML resource provider and installs the two bridge tool configurations.
+
+The seed creates six attributed image Media entities and two unpublished articles. If no Image media type exists, it creates a dedicated demo Image type. It records IDs and UUIDs, leaves existing content types alone, and can be rerun without duplicating samples or resetting a selected hero. It also creates the **MCP Apps demo editor** role and **mcp_apps_demo** OAuth scope, and assigns that role to uid 1 for the first demonstration. The role includes Drupal content-access bypass for the demo drafts; only run the seed on a site intended for this demonstration. Anonymous and authenticated role permissions are unchanged.
+
+Use Olivero on a disposable demo site to match the article preview:
+
+```sh
+vendor/bin/drush theme:enable olivero
+vendor/bin/drush config:set system.theme default olivero -y
+```
+
+The app and full demo article pages share the article CSS and Drupal's `mcp_apps_hero` image style: a centred 1100 × 500 crop. Other content types retain their normal presentation.
+
+### 4. Configure OAuth signing keys
+
+Create keys outside the document root and configure Simple OAuth to use them:
+
+```sh
+mkdir -m 700 oauth-keys
+vendor/bin/drush simple-oauth:generate-keys "$PWD/oauth-keys"
+vendor/bin/drush config:set simple_oauth.settings public_key "$PWD/oauth-keys/public.key" -y
+vendor/bin/drush config:set simple_oauth.settings private_key "$PWD/oauth-keys/private.key" -y
+vendor/bin/drush cr
+```
+
+The PHP/web-server user must be able to read the keys. Keep private keys out of version control. Existing sites with working OAuth keys should retain their configuration.
+
+Connect your MCP Apps host to:
+
+```text
+https://YOUR-DRUPAL-HOST/mcp
+```
+
+Choose OAuth authentication and sign in with the site administrator for the first demonstration. Request the `mcp_apps_demo` scope; the protected-resource metadata advertises it. If your host has an explicit scope field, enter that value. The enabled modules expose OAuth discovery and dynamic client registration; your host can register its OAuth client. Hosts without dynamic registration require a client configured under **Configuration → Web services → Consumers**, with the host's actual redirect URI and Authorization Code grant and `mcp_apps_demo` as its default Authorization Code scope.
+
+For a non-administrator demo account, assign **MCP Apps demo editor** under **People**. For a more limited role, grant the permissions below and configure an OAuth scope carrying that role under `/admin/config/people/simple_oauth/oauth2_scope/dynamic`. Authorization Code login also requires **Grant OAuth2 codes**. Module permissions and Drupal content access still apply independently of OAuth. This demonstration verifies OAuth authentication and Drupal permissions; it does not claim per-tool OAuth scope enforcement by the companion alpha release.
+
+## Demonstrate the workflow
+
+Ask your MCP Apps host:
+
+> Update the hero for ‘A weekend of discovery in Rotterdam’
+
+Or call the tool explicitly:
+
+```json
+{"name":"tool_api__media_picker_open","arguments":{"article_title":"A weekend of discovery in Rotterdam"}}
+```
+
+Choose an image, edit article-specific alt text, compare current and proposed heroes, then choose **Review hero change** and **Save hero to article**. Saving uses the app-visible `tool_api__media_picker_save_hero` tool. It creates an unpublished revision and preserves the title, body, and shared Media alt text. Open the article's URL to compare the actual Drupal page with the app preview; article IDs vary between sites.
+
+The HTML resource is `ui://drupal/media-picker`, served as `text/html;profile=mcp-app`. A host must support MCP Apps to render it. Ordinary MCP clients receive useful text and structured results. The optional Drupal page `/admin/content/mcp-apps/media-picker` is a read-only browser preview; it cannot replace MCP host initialization or save from the app.
+
+## Permissions and access
+
+Assign permissions under **People → Permissions**:
+
+| Permission | Purpose |
+| --- | --- |
+| Access MCP server | Reach the MCP endpoint |
+| Use the MCP Media picker | Open/search the tool, read its HTML resource, and use the browser preview |
+| Update article heroes through MCP | Save a hero; also requires the picker permission |
+| View media / View published content | See accessible Media and content |
+
+Drupal node view/update, field view/edit, and file access checks remain in force. The sample drafts belong to the administrator: another account needs access to those unpublished drafts and permission to edit them. On an isolated demonstration site, a dedicated tester role can use Drupal's **Bypass content access control** permission; on an existing site, use your site's appropriate draft-access policy instead.
+
+No permissions are automatically granted to anonymous or authenticated roles. A picker-only user cannot save. Denied calls return no article/image data and make no content changes. The implementation rejects published or moderated articles, stale revision tokens, inaccessible Media, and private files.
+
+## What the three patches demonstrate
+
+```text
+Tool API plugin + definition/result metadata
+    → MCP ToolConfig derivative + bridge
+    → MCP Server factory + native ResourceProvider
+    → official PHP MCP SDK + MCP Apps host
+```
+
+| Contrib project | Patched release | Proposed work |
+| --- | --- | --- |
+| `mcp_server` | `2.0.0-beta5` | Enable the SDK McpApps extension once; preserve Tool/derivative and resource/template definition metadata; retain resource content `_meta` using SDK content objects |
+| `tool` | `1.0.0-beta8` | Generic definition and execution-result metadata, retained by formatted results without becoming tool outputs |
+| `mcp_server_tool_bridge` | `1.0.0-beta3` | Carry definition metadata into MCP derivatives and result metadata into CallToolResult |
+
+The bridge patch also corrects two existing test fixtures that reference a removed Tool API output-definition class. The patches include regressions for metadata inheritance, result formatting, and separate resource descriptor/content metadata.
+
+The demo uses native Drupal plugins and bridge configuration entities. It does not replace the server factory, register SDK-discovered tools, implement JSON-RPC, use WebMCP, or supply an agent iframe renderer. Large image previews travel in presentation metadata and resource HTML, outside model-visible structured content. The committed app bundle uses the official JavaScript MCP Apps SDK.
+
+The generic metadata contract and unconditional extension advertisement are proposals for maintainer discussion. A full conformance suite for multiple independent app modules and capability-dependent registration remains outside this single-app demonstration.
+
+## Tests and development
+
+The Drupal tests cover module permissions, HTTP 403/200 responses, node/field/Media restrictions, denied writes leaving content unchanged, safe revisions, and actual tool/resource dispatch through the native factory and bridge. Unit regressions exercise the proposed metadata contracts.
+
+With Drupal core-dev and the normal Drupal PHPUnit database/base-URL configuration installed:
+
+```sh
+vendor/bin/phpunit web/modules/contrib/mcp_apps/tests/src
+vendor/bin/phpunit web/modules/contrib/mcp_server
+vendor/bin/phpunit web/modules/contrib/tool/tests/src/Unit
+vendor/bin/phpunit web/modules/contrib/mcp_server_tool_bridge
+```
+
+To verify the real MCP transport and the actual UI bundle, run from the site root:
+
+```sh
+DRUPAL_BASE_URL=https://YOUR-DRUPAL-HOST python3 web/modules/contrib/mcp_apps/tests/protocol_smoke.py
+cd web/modules/contrib/mcp_apps
+npm ci
+node tests/ui-smoke.mjs
+```
+
+The protocol check authenticates as the local `admin` account through Drush and creates a temporary UI fixture. `DRUPAL_USER` selects another local account. This tests protocol dispatch separately from HTTP OAuth login. The UI test uses the real bundle and SDK with a simulated host.
+
+After changing UI source, rebuild and commit the bundle:
+
+```sh
+npm run build
+```
+
+Sample photos are bundled, labelled as stock images, and attributed in `assets/manifest.json`. They are not photographs of the article's actual event. The UI is a dedicated Olivero-style demo presentation, not an imported Drupal CMS recipe.
+
+## Remove sample content
+
+```sh
+vendor/bin/drush php:script web/modules/contrib/mcp_apps/scripts/cleanup_demo.php
+```
+
+Cleanup only removes UUID-tracked demo data. Referenced Media, files with usage, and bundles containing other content are retained. Uninstalling the module removes its resource registration and bridge configurations. The demo role/scope are retained by sample-content cleanup and are removed when the module is uninstalled. OAuth keys and site-wide authentication configuration remain yours to manage.

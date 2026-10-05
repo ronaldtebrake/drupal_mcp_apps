@@ -1,0 +1,181 @@
+--- a/src/Attribute/Tool.php
++++ b/src/Attribute/Tool.php
+@@ -44,6 +44,8 @@
+    *   (optional) The deriver class.
+    * @param array<string, string|false> $forms
+    *   (optional) An array of form class names or FALSE, keyed by a string.
++   * @param array $meta
++   *   Transport-specific presentation metadata, separate from inputs/outputs.
+    */
+   public function __construct(
+     public readonly string $id,
+@@ -56,6 +58,7 @@
+     public readonly ?array $output_definitions = [],
+     public readonly ?string $deriver = NULL,
+     public readonly ?array $forms = [],
++    public readonly array $meta = [],
+   ) {}
+ 
+   /**
+--- a/src/ExecutableResult.php
++++ b/src/ExecutableResult.php
+@@ -29,21 +29,28 @@
+    *   Input so a caller that constructs a failure directly, without
+    *   thinking about categorization, keeps the schema-attached behavior
+    *   that existed before #3582993 introduced this parameter.
++   * @param array $meta
++   *   Presentation metadata, separate from output context values.
+    */
+   public function __construct(
+     private bool $success,
+     private TranslatableMarkup $message,
+     ?array $contextValues = [],
+     private FailureCategory $failureCategory = FailureCategory::Input,
++    private array $meta = [],
+   ) {
+     $this->contextValues = $contextValues ?? [];
+   }
+ 
+   /**
+-   * Indicates if the operation was successful.
+-   *
+-   * @return bool
+-   *   TRUE if successful, FALSE otherwise.
++   * {@inheritdoc}
++   */
++  public function getMeta(): array {
++    return $this->meta;
++  }
++
++  /**
++   * {@inheritdoc}
+    */
+   public function isSuccess(): bool {
+     return $this->success;
+@@ -83,11 +90,13 @@
+    *   A message or description.
+    * @param ?array $context_values
+    *   Optional array of values keyed by context name.
++   * @param array $meta
++   *   Presentation metadata, separate from output context values.
+    *
+    * @return static
+    */
+-  public static function success(TranslatableMarkup $message, ?array $context_values = []): static {
+-    return new self(TRUE, $message, $context_values);
++  public static function success(TranslatableMarkup $message, ?array $context_values = [], array $meta = []): static {
++    return new self(TRUE, $message, $context_values, meta: $meta);
+   }
+ 
+   /**
+@@ -99,11 +108,13 @@
+    *   Optional array of values keyed by context name.
+    * @param \Drupal\tool\FailureCategory $category
+    *   The failure category. See the constructor for the default.
++   * @param array $meta
++   *   Presentation metadata, separate from output context values.
+    *
+    * @return static
+    */
+-  public static function failure(TranslatableMarkup $message, ?array $context_values = [], FailureCategory $category = FailureCategory::Input): static {
+-    return new self(FALSE, $message, $context_values, $category);
++  public static function failure(TranslatableMarkup $message, ?array $context_values = [], FailureCategory $category = FailureCategory::Input, array $meta = []): static {
++    return new self(FALSE, $message, $context_values, $category, $meta);
+   }
+ 
+ }
+--- a/src/FormattedExecutableResult.php
++++ b/src/FormattedExecutableResult.php
+@@ -32,10 +32,14 @@
+   }
+ 
+   /**
+-   * Indicates if the operation was successful.
+-   *
+-   * @return bool
+-   *   TRUE if successful, FALSE otherwise.
++   * {@inheritdoc}
++   */
++  public function getMeta(): array {
++    return $this->originalResult->getMeta();
++  }
++
++  /**
++   * {@inheritdoc}
+    */
+   public function isSuccess(): bool {
+     return $this->originalResult->isSuccess();
+--- a/src/Tool/ToolDefinition.php
++++ b/src/Tool/ToolDefinition.php
+@@ -56,6 +56,26 @@
+    * @var bool
+    */
+   protected bool $destructive = FALSE;
++
++  /**
++   * Transport-specific definition metadata.
++   */
++  protected array $meta = [];
++
++  /**
++   * Returns metadata without adding it to the tool input/output schema.
++   */
++  public function getMeta(): array {
++    return $this->meta;
++  }
++
++  /**
++   * Sets transport-specific definition metadata.
++   */
++  public function setMeta(array $meta): static {
++    $this->meta = $meta;
++    return $this;
++  }
+ 
+   /**
+    * Input definition refiners configuration for dynamic input refinement.
+--- a/src/ToolResultInterface.php
++++ b/src/ToolResultInterface.php
+@@ -12,6 +12,11 @@
+  * (#3582964).
+  */
+ interface ToolResultInterface {
++
++  /**
++   * Returns presentation metadata separate from model-visible output values.
++   */
++  public function getMeta(): array;
+ 
+   /**
+    * Indicates if the operation was successful.
+--- a/tests/src/Unit/ExecutableResultTest.php
++++ b/tests/src/Unit/ExecutableResultTest.php
+@@ -8,6 +8,7 @@
+ use Drupal\Tests\UnitTestCase;
+ use Drupal\tool\ExecutableResult;
+ use Drupal\tool\FailureCategory;
++use Drupal\tool\FormattedExecutableResult;
+ 
+ /**
+  * Tests the ExecutableResult value object.
+@@ -86,4 +87,20 @@
+     $this->assertSame(FailureCategory::Runtime, $result->getFailureCategory());
+   }
+ 
++  /**
++   * Metadata stays separate from outputs through result formatting.
++   */
++  public function testPresentationMetadata(): void {
++    $meta = ['ui/custom' => ['image' => 'presentation-only']];
++    $values = ['result' => 'model-visible'];
++    $message = new TranslatableMarkup('Done.');
++    $result = ExecutableResult::success($message, $values, $meta);
++    $formatted = new FormattedExecutableResult($result, $values);
++    $this->assertSame($meta, $result->getMeta());
++    $this->assertSame($meta, $formatted->getMeta());
++    $this->assertSame($values, $formatted->getContextValues());
++    $this->assertSame([], ExecutableResult::success($message)->getMeta());
++    $this->assertSame($meta, ExecutableResult::failure($message, meta: $meta)->getMeta());
++  }
++
+ }

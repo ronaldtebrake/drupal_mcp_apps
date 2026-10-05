@@ -1,0 +1,244 @@
+--- a/src/Attribute/Tool.php
++++ b/src/Attribute/Tool.php
+@@ -45,6 +45,8 @@
+    *   Whether repeated identical calls produce no additional effect.
+    * @param bool $openWorld
+    *   Whether the tool may interact with external entities.
++   * @param array $meta
++   *   Arbitrary MCP tool metadata, including MCP Apps UI links.
+    */
+   public function __construct(
+     public readonly string $id,
+@@ -58,6 +60,7 @@
+     public readonly bool $destructive = TRUE,
+     public readonly bool $idempotent = FALSE,
+     public readonly bool $openWorld = TRUE,
++    public readonly array $meta = [],
+   ) {}
+ 
+   /**
+@@ -82,6 +85,7 @@
+       destructive: $this->destructive,
+       idempotent: $this->idempotent,
+       openWorld: $this->openWorld,
++      meta: $this->meta,
+     );
+     $definition->setClass($this->getClass());
+     if ($this->getProvider() !== NULL) {
+--- a/src/Capability/Handler/ResourceProviderHandler.php
++++ b/src/Capability/Handler/ResourceProviderHandler.php
+@@ -8,6 +8,8 @@
+ use Drupal\mcp_server\Plugin\ResourceProviderInterface;
+ use Drupal\mcp_server\Resource\ResourceContentCache;
+ use Mcp\Server\ClientGateway;
++use Mcp\Schema\Content\TextResourceContents;
++use Mcp\Schema\Content\BlobResourceContents;
+ use Mcp\Server\Handler\ResourceHandlerInterface;
+ 
+ /**
+@@ -25,11 +27,15 @@
+    * {@inheritdoc}
+    */
+   public function read(string $uri, ClientGateway $gateway): mixed {
+-    return $this->cache->generate(
++    $content = $this->cache->generate(
+       $uri,
+       fn() => $this->plugin->checkAccess($uri, $this->currentUser),
+       fn() => $this->plugin->getResourceContent($uri),
+     );
++    // SDK objects retain content metadata separately from descriptor metadata.
++    return isset($content['text'])
++      ? TextResourceContents::fromArray($content)
++      : BlobResourceContents::fromArray($content);
+   }
+ 
+ }
+--- a/src/Capability/Handler/ResourceTemplateProviderHandler.php
++++ b/src/Capability/Handler/ResourceTemplateProviderHandler.php
+@@ -8,6 +8,8 @@
+ use Drupal\mcp_server\Plugin\ResourceTemplateProviderInterface;
+ use Drupal\mcp_server\Resource\ResourceContentCache;
+ use Mcp\Server\ClientGateway;
++use Mcp\Schema\Content\TextResourceContents;
++use Mcp\Schema\Content\BlobResourceContents;
+ use Mcp\Server\Handler\ResourceTemplateHandlerInterface;
+ 
+ /**
+@@ -27,11 +29,15 @@
+    * {@inheritdoc}
+    */
+   public function read(string $uri, array $variables, ClientGateway $gateway): mixed {
+-    return $this->cache->generate(
++    $content = $this->cache->generate(
+       $uri,
+       fn() => $this->plugin->checkAccess($uri, $this->currentUser),
+       fn() => $this->plugin->getResourceContent($uri),
+     );
++    // SDK objects retain content metadata separately from descriptor metadata.
++    return isset($content['text'])
++      ? TextResourceContents::fromArray($content)
++      : BlobResourceContents::fromArray($content);
+   }
+ 
+ }
+--- a/src/Definition/ToolDefinition.php
++++ b/src/Definition/ToolDefinition.php
+@@ -50,6 +50,7 @@
+     public readonly bool $openWorld = TRUE,
+     public readonly ?string $toolId = NULL,
+     public readonly ?string $mcpToolConfigId = NULL,
++    public readonly array $meta = [],
+   ) {
+     $this->id = $id;
+   }
+@@ -116,6 +117,8 @@
+    *   Optional destructive flag override.
+    * @param bool|null $idempotent
+    *   Optional idempotent flag override.
++   * @param array|null $meta
++   *   Optional metadata override; NULL preserves the base metadata.
+    *
+    * @return self
+    *   A new ToolDefinition with derivative metadata populated.
+@@ -131,6 +134,7 @@
+     ?bool $readOnly = NULL,
+     ?bool $destructive = NULL,
+     ?bool $idempotent = NULL,
++    ?array $meta = NULL,
+   ): self {
+     $clone = new self(
+       id: $this->id . WireSafeDerivativeDiscoveryDecorator::SEPARATOR . $derivativeId,
+@@ -144,6 +148,7 @@
+       destructive: $destructive ?? $this->destructive,
+       idempotent: $idempotent ?? $this->idempotent,
+       openWorld: $this->openWorld,
++      meta: $meta ?? $this->meta,
+       toolId: $toolId ?? $this->toolId,
+       mcpToolConfigId: $mcpToolConfigId ?? $this->mcpToolConfigId,
+     );
+--- a/src/McpServerFactory.php
++++ b/src/McpServerFactory.php
+@@ -35,6 +35,7 @@
+ use Mcp\Schema\ToolAnnotations;
+ use Mcp\Server;
+ use Mcp\Server\Builder;
++use Mcp\Schema\Extension\Apps\McpApps;
+ use Mcp\Server\Session\SessionStoreInterface;
+ use Psr\Container\ContainerInterface;
+ use Psr\EventDispatcher\EventDispatcherInterface;
+@@ -186,6 +187,8 @@
+       ->setSession($this->sessionStore)
+       ->setContainer($this->container);
+ 
++    $builder->enableExtension(new McpApps());
++
+     $this->registerTools($builder);
+     $this->registerPrompts($builder);
+     $this->registerResources($builder);
+@@ -292,6 +295,7 @@
+           description: (string) $definition->description,
+           annotations: $annotations,
+           outputSchema: $definition->outputSchema,
++          meta: $definition->meta ?: NULL,
+         );
+         $builder->add($tool, $plugin);
+       }
+@@ -649,6 +653,7 @@
+           name: $resource_data['name'],
+           description: $resource_data['description'] ?? '',
+           mimeType: $resource_data['mimeType'] ?? 'application/json',
++          meta: $resource_data['meta'] ?? NULL,
+         );
+         $builder->add($template, $handler, $completion_providers);
+       }
+@@ -718,6 +723,7 @@
+           name: $resource_data['name'],
+           description: $resource_data['description'] ?? '',
+           mimeType: $resource_data['mimeType'] ?? 'application/json',
++          meta: $resource_data['meta'] ?? NULL,
+           size: $resource_data['size'] ?? NULL,
+         );
+         $builder->add($resource, $handler);
+--- a/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceProvider/TestResourceProvider.php
++++ b/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceProvider/TestResourceProvider.php
+@@ -99,6 +99,7 @@
+         'name' => 'Hello',
+         'description' => 'Fixed test resource.',
+         'mimeType' => 'application/json',
++        'meta' => ['test/custom' => 'descriptor'],
+       ],
+     ];
+   }
+@@ -135,6 +136,7 @@
+       'uri' => $uri,
+       'mimeType' => 'application/json',
+       'text' => '{"hello":"world"}',
++      '_meta' => ['test/custom' => 'content'],
+     ];
+     $metadata = new CacheableMetadata();
+     $maxAge = $this->configuration['max_age'] ?? NULL;
+--- a/tests/src/Kernel/Plugin/ResourceProviderRegistrationTest.php
++++ b/tests/src/Kernel/Plugin/ResourceProviderRegistrationTest.php
+@@ -8,6 +8,7 @@
+ use Drupal\mcp_server\Exception\McpAuthorizationDeniedException;
+ use Mcp\Capability\Registry\ResourceReference;
+ use Mcp\Capability\RegistryInterface;
++use Mcp\Schema\Content\TextResourceContents;
+ use Mcp\Server;
+ use Mcp\Server\Handler\Request\ReadResourceHandler;
+ use Mcp\Server\Session\SessionInterface;
+@@ -84,6 +85,7 @@
+     $this->assertSame('test://hello', $reference->resource->uri);
+     $this->assertSame('Hello', $reference->resource->name);
+     $this->assertSame('application/json', $reference->resource->mimeType);
++    $this->assertSame(['test/custom' => 'descriptor'], $reference->resource->meta);
+   }
+ 
+   /**
+@@ -97,10 +99,11 @@
+     assert($reference instanceof ResourceReference);
+ 
+     $result = ($reference->handler)($this->argumentBag('test://hello'));
+-    $this->assertIsArray($result);
+-    $this->assertSame('test://hello', $result['uri']);
+-    $this->assertSame('application/json', $result['mimeType']);
+-    $this->assertSame('{"hello":"world"}', $result['text']);
++    $this->assertInstanceOf(TextResourceContents::class, $result);
++    $this->assertSame('test://hello', $result->uri);
++    $this->assertSame('application/json', $result->mimeType);
++    $this->assertSame('{"hello":"world"}', $result->text);
++    $this->assertSame(['test/custom' => 'content'], $result->meta);
+   }
+ 
+   /**
+@@ -168,8 +171,8 @@
+     $first = ($reference->handler)($this->argumentBag('test://hello'));
+     $second = ($reference->handler)($this->argumentBag('test://hello'));
+ 
+-    $this->assertIsArray($first);
+-    $this->assertSame($first, $second);
++    $this->assertInstanceOf(TextResourceContents::class, $first);
++    $this->assertEquals($first, $second);
+ 
+     $count = $this->container->get('state')
+       ->get('test_resource.get_content_call_count', 0);
+--- a/tests/src/Unit/Definition/ToolDefinitionTest.php
++++ b/tests/src/Unit/Definition/ToolDefinitionTest.php
+@@ -100,4 +100,17 @@
+     return $base;
+   }
+ 
++  /**
++   * App links and unrelated metadata survive derivative cloning.
++   */
++  public function testMetadataInheritanceAndOverride(): void {
++    $meta = ['ui' => ['resourceUri' => 'ui://test/app'], 'test/custom' => 7];
++    $label = new TranslatableMarkup('Test app');
++    $base = new ToolDefinition('app', $label, $label, meta: $meta);
++    $base->setClass(self::class);
++    $this->assertSame($meta, $base->withDerivative('one', $label)->meta);
++    $this->assertSame([], $base->withDerivative('two', $label, meta: [])->meta);
++    $this->assertSame($meta, $base->meta);
++  }
++
+ }

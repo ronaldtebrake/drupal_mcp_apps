@@ -53,7 +53,7 @@ foreach ([
     'Hero image',
     [
       'handler' => 'default:media',
-      'handler_settings' => ['target_bundles' => ['image' => 'image']],
+      'handler_settings' => ['target_bundles' => [$registry['image_media_type'] => $registry['image_media_type']]],
     ],
   ],
   HeroWorkflow::ALT_FIELD => ['string_long', [], 'Hero alt text', []],

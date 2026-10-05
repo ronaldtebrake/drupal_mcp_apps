@@ -7,13 +7,9 @@ namespace Drupal\mcp_apps\Mcp;
 use Drupal\media\MediaInterface;
 use Drupal\image\Entity\ImageStyle;
 use Drupal\mcp_apps\HeroArticle;
-use Mcp\Capability\Attribute\McpResource;
-use Mcp\Capability\Attribute\McpTool;
-use Mcp\Capability\Attribute\Schema;
 use Mcp\Schema\Content\TextResourceContents;
 use Mcp\Schema\Extension\Apps\McpApps;
 use Mcp\Schema\Result\CallToolResult;
-use Mcp\Schema\ToolAnnotations;
 
 /**
  * Access-checked Drupal Media search with a visual selection app.
@@ -25,14 +21,7 @@ final class MediaPicker {
   /**
    * Searches Media entities; the UI returns a selection to the chat.
    */
-  #[McpTool(
-    name: 'media_picker_open',
-    title: 'Drupal Media Picker',
-    description: 'Open an article hero-image workflow with a live Olivero-style article preview. Pass node_id for a specific demo article, or article_title to find it by title. Choose an image, review its appearance and post-specific alt text, then explicitly save a draft revision. Opening is read-only. Sample stock photos are labelled.',
-    annotations: new ToolAnnotations(readOnlyHint: TRUE, openWorldHint: FALSE),
-    meta: ['ui' => ['resourceUri' => self::URI]],
-  )]
-  public function open(#[Schema(maxLength: 200)] string $query = '', int $node_id = 0, #[Schema(maxLength: 200)] string $article_title = ''): CallToolResult {
+  public function open(string $query = '', int $node_id = 0, string $article_title = ''): CallToolResult {
     return DemoSupport::respond(function () use ($query, $node_id, $article_title): array {
       PickerAccess::requireAccess();
       if ($node_id < 0 || mb_strlen($query) > 200 || mb_strlen($article_title) > 200) {
@@ -164,7 +153,6 @@ final class MediaPicker {
   /**
    * Returns the bundled official-SDK app.
    */
-  #[McpResource(uri: self::URI, name: 'drupal-media-picker', title: 'Drupal Media Picker', mimeType: McpApps::MIME_TYPE, meta: ['ui' => new \stdClass()])]
   public function resource(): TextResourceContents {
     PickerAccess::requireAccess();
     $resource = DemoSupport::resource('media-picker');

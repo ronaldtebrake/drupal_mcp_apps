@@ -1,0 +1,82 @@
+--- a/src/Plugin/Derivative/McpToolConfigDeriver.php
++++ b/src/Plugin/Derivative/McpToolConfigDeriver.php
+@@ -124,6 +124,7 @@
+       readOnly: !$tool_definition->getOperation()->isModifying(),
+       destructive: $tool_definition->isDestructive(),
+       idempotent: $tool_definition->getOperation()->isIdempotent(),
++      meta: $tool_definition->getMeta(),
+     );
+   }
+ 
+--- a/src/Plugin/mcp_server/Tool/ToolApi.php
++++ b/src/Plugin/mcp_server/Tool/ToolApi.php
+@@ -155,7 +155,7 @@
+         // by reshaping the arguments unless it says so (#3582993).
+         return $this->failure($message, $tool, $formatted->getFailureCategory() ?? FailureCategory::Runtime);
+       }
+-      return $this->success($formatted->getContextValues(), $message);
++      return $this->success($formatted->getContextValues(), $message, $formatted->getMeta());
+     }
+     catch (InputException | HandleExceptionInterface $e) {
+       // Both come from setInputValue() above, before validateInputs() can
+@@ -216,8 +216,10 @@
+    *   The formatted output values keyed by output name.
+    * @param string $message
+    *   The result message with any hints appended.
+-   */
+-  private function success(array $outputs, string $message): CallToolResult {
++   * @param array $meta
++   *   Presentation metadata, kept outside model-visible outputs.
++   */
++  private function success(array $outputs, string $message, array $meta): CallToolResult {
+     $content = [];
+     if ($message !== '') {
+       $content[] = new TextContent($message);
+@@ -229,6 +231,7 @@
+       content: $content,
+       isError: FALSE,
+       structuredContent: $outputs ?: NULL,
++      meta: $meta ?: NULL,
+     );
+   }
+ 
+--- a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/AccessDeniedTool.php
++++ b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/AccessDeniedTool.php
+@@ -12,7 +12,7 @@
+ use Drupal\tool\ExecutableResult;
+ use Drupal\tool\Tool\ToolBase;
+ use Drupal\tool\Tool\ToolOperation;
+-use Drupal\tool\TypedData\OutputDefinition;
++use Drupal\Core\Plugin\Context\ContextDefinition;
+ 
+ /**
+  * Test tool that always denies access.
+@@ -28,7 +28,7 @@
+   description: new TranslatableMarkup('A test tool whose access check always denies.'),
+   operation: ToolOperation::Read,
+   output_definitions: [
+-    'secret' => new OutputDefinition(
++    'secret' => new ContextDefinition(
+       data_type: 'string',
+       label: new TranslatableMarkup('Secret'),
+       description: new TranslatableMarkup('A value nobody is allowed to read.'),
+--- a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/MultipleStringInputTool.php
++++ b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/MultipleStringInputTool.php
+@@ -13,7 +13,7 @@
+ use Drupal\tool\Tool\ToolBase;
+ use Drupal\tool\Tool\ToolOperation;
+ use Drupal\tool\TypedData\InputDefinition;
+-use Drupal\tool\TypedData\OutputDefinition;
++use Drupal\Core\Plugin\Context\ContextDefinition;
+ 
+ /**
+  * Test tool with a scalar input that accepts multiple values.
+@@ -37,7 +37,7 @@
+     ),
+   ],
+   output_definitions: [
+-    'fields' => new OutputDefinition(
++    'fields' => new ContextDefinition(
+       data_type: 'string',
+       label: new TranslatableMarkup('Fields'),
+       description: new TranslatableMarkup('The field names received.'),

@@ -45,7 +45,7 @@ final class MediaPickerAccessTest extends BrowserTestBase {
   public function testAccessBoundaries(): void {
     $this->createMediaType('image', ['id' => 'image']);
     ob_start();
-    require DRUPAL_ROOT . '/' . $this->container->get('extension.list.module')->getPath('mcp_apps') . '/tests/seed_demos.php';
+    require DRUPAL_ROOT . '/' . $this->container->get('extension.list.module')->getPath('mcp_apps') . '/scripts/seed_demo.php';
     ob_end_clean();
     $registry = $this->container->get('state')->get('mcp_apps.demo_data');
     $node_id = (int) array_key_first($registry['posts']);
@@ -119,6 +119,23 @@ final class MediaPickerAccessTest extends BrowserTestBase {
       $media->setPublished()->save();
       $saved->setPublished()->save();
       $this->assertTrue($workflow->save($node_id, $media_id, 'Published change', $token)->isError);
+      $this->container->get('entity_type.manager')->getAccessControlHandler('media')->resetCache();
+      $second_id = (int) array_key_last($registry['posts']);
+      $second = array_values(array_filter($workflow->posts(), static fn(array $post): bool => $post['id'] === $second_id))[0];
+      $arguments = [
+        'node_id' => $second_id,
+        'media_id' => $media_id,
+        'alt' => 'Saved through the Tool API bridge',
+        'revision' => $second['revision'],
+      ];
+      $wire = $this->runMcpSession($reader, $arguments);
+      $this->assertTrue($wire[4]['result']['isError']);
+      $this->assertStringContainsString('access denied', $wire[4]['result']['content'][0]['text']);
+      $wire = $this->runMcpSession($editor, $arguments);
+      $this->assertFalse($wire[4]['result']['isError'] ?? FALSE);
+      $this->assertSame('media-picker-hero-saved', $wire[4]['result']['structuredContent']['app']);
+      $this->assertSame('draft', $wire[4]['result']['structuredContent']['post']['status']);
+      $this->assertSame('Saved through the Tool API bridge', $wire[4]['result']['structuredContent']['post']['alt']);
     }
     finally {
       $proxy->setAccount($original_account);
@@ -146,7 +163,7 @@ final class MediaPickerAccessTest extends BrowserTestBase {
   /**
    * Exercises actual SDK discovery, tool calls and resource reads over MCP.
    */
-  private function runMcpSession(AccountInterface $account): array {
+  private function runMcpSession(AccountInterface $account, array $save_arguments = []): array {
     $input = fopen('php://memory', 'r+');
     $output = fopen('php://memory', 'r+');
     $requests = [
@@ -160,9 +177,16 @@ final class MediaPickerAccessTest extends BrowserTestBase {
         ],
       ],
       ['method' => 'notifications/initialized'],
-      ['id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'media_picker_open', 'arguments' => []]],
+      ['id' => 2, 'method' => 'tools/call', 'params' => ['name' => 'tool_api__media_picker_open', 'arguments' => []]],
       ['id' => 3, 'method' => 'resources/read', 'params' => ['uri' => MediaPicker::URI]],
     ];
+    if ($save_arguments !== []) {
+      $requests[] = [
+        'id' => 4,
+        'method' => 'tools/call',
+        'params' => ['name' => 'tool_api__media_picker_save_hero', 'arguments' => $save_arguments],
+      ];
+    }
     foreach ($requests as $request) {
       fwrite($input, json_encode(['jsonrpc' => '2.0'] + $request, JSON_THROW_ON_ERROR) . "\n");
     }

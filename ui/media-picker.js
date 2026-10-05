@@ -131,7 +131,7 @@ function renderDetail() {
       state.busy = true; renderDetail(); $('article-select').disabled = true;
       document.querySelectorAll('.media-card').forEach((card) => { card.disabled = true; });
       try {
-        const result = await bridge.app.callServerTool({ name: 'media_picker_save_hero', arguments: { node_id: state.post.id, media_id: item.id, alt: state.alt.trim(), revision: state.post.revision } });
+        const result = await bridge.app.callServerTool({ name: 'tool_api__media_picker_save_hero', arguments: { node_id: state.post.id, media_id: item.id, alt: state.alt.trim(), revision: state.post.revision } });
         if (result.isError) throw new Error(result.content?.[0]?.text || 'The hero could not be saved. Refresh and try again.');
         receive(result);
       } catch (error) { showError(error); }

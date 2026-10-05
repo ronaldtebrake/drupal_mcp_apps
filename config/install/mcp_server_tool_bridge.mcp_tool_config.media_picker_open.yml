@@ -1,0 +1,7 @@
+id: media_picker_open
+tool_id: media_picker_open
+description: null
+status: true
+dependencies:
+  module:
+    - mcp_apps

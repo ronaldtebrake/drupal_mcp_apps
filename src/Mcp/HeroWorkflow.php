@@ -7,9 +7,7 @@ namespace Drupal\mcp_apps\Mcp;
 use Drupal\media\MediaInterface;
 use Drupal\mcp_apps\HeroArticle;
 use Drupal\node\NodeInterface;
-use Mcp\Capability\Attribute\McpTool;
 use Mcp\Schema\Result\CallToolResult;
-use Mcp\Schema\ToolAnnotations;
 
 /**
  * A deliberately small hero-image workflow for unpublished demo posts.
@@ -39,13 +37,6 @@ final class HeroWorkflow {
   /**
    * Saves only a confirmed hero reference and post-specific alt text.
    */
-  #[McpTool(
-    name: 'media_picker_save_hero',
-    title: 'Save a draft post hero image',
-    description: 'After explicit user confirmation in the Media picker, save a new revision of an unpublished MCP hero demo post with a selected image Media ID and post-specific alt text. Requires its current revision token. Does not publish or modify shared Media alt text. Refuses published or moderated posts.',
-    annotations: new ToolAnnotations(readOnlyHint: FALSE, destructiveHint: FALSE, openWorldHint: FALSE),
-    meta: ['ui' => ['resourceUri' => MediaPicker::URI, 'visibility' => ['app']]],
-  )]
   public function save(int $node_id, int $media_id, string $alt, string $revision): CallToolResult {
     return DemoSupport::respond(function () use ($node_id, $media_id, $alt, $revision): array {
       PickerAccess::requireAccess(TRUE);
