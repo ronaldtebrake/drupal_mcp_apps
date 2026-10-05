@@ -1,6 +1,6 @@
 import { $, element, host, imageUrl, showError } from './common.js';
 
-const state = { data: null, thumbnails: {}, library: new Map(), post: null, proposed: false, reviewing: false, query: '', selected: null, alt: '', sent: false, busy: false };
+const state = { data: null, thumbnails: {}, heroThumbnails: {}, library: new Map(), post: null, proposed: false, reviewing: false, query: '', selected: null, alt: '', sent: false, busy: false };
 const bridge = host('media-picker', 'Drupal Media Picker', receive);
 
 function receive(result) {
@@ -17,6 +17,7 @@ function receive(result) {
   if (data?.app !== 'media-picker' || !Array.isArray(data.media)) return;
   state.data = data;
   state.thumbnails = { ...globalThis.__MEDIA_THUMBNAILS__, ...state.thumbnails, ...result._meta?.['drupal/media-picker']?.thumbnails };
+  state.heroThumbnails = { ...globalThis.__MEDIA_HERO_THUMBNAILS__, ...state.heroThumbnails, ...result._meta?.['drupal/media-picker']?.heroThumbnails };
   [...data.media, ...(data.hero_media || [])].forEach((item) => state.library.set(item.id, item));
   const target = data.node_id || state.post?.id;
   state.post = data.posts?.find((post) => post.id === target) || data.posts?.[0] || null;
@@ -36,10 +37,10 @@ function receive(result) {
   render();
 }
 
-function thumbnailUrl(item) {
-  const inline = state.thumbnails[item.id];
+function thumbnailUrl(item, hero = false) {
+  const inline = (hero ? state.heroThumbnails : state.thumbnails)[item.id];
   if (typeof inline === 'string' && inline.length < 750000 && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(inline)) return inline;
-  return imageUrl(item.thumbnail, state.data.origin);
+  return imageUrl(hero ? item.hero_thumbnail : item.thumbnail, state.data.origin);
 }
 
 function render() {
@@ -86,7 +87,7 @@ function renderArticle() {
   $('show-proposed').disabled = !state.selected;
   const item = state.proposed ? state.selected : state.library.get(post?.hero?.id);
   const box = $('article-image'); box.replaceChildren();
-  const url = item && thumbnailUrl(item);
+  const url = item && thumbnailUrl(item, true);
   if (url) { const image = element('img'); image.src = url; image.alt = state.proposed ? state.alt : post.alt; box.append(image); }
   else box.append(element('div', 'empty', post ? 'No hero image available' : 'Your article preview will appear here'));
 }

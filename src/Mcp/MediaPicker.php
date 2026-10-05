@@ -6,6 +6,7 @@ namespace Drupal\mcp_apps\Mcp;
 
 use Drupal\media\MediaInterface;
 use Drupal\image\Entity\ImageStyle;
+use Drupal\mcp_apps\HeroArticle;
 use Mcp\Capability\Attribute\McpResource;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Capability\Attribute\Schema;
@@ -43,6 +44,7 @@ final class MediaPicker {
       $hero_ids = array_column(array_filter(array_column($posts, 'hero')), 'id');
       $hero_media = [];
       $thumbnails = [];
+      $hero_thumbnails = [];
       $thumbnail_bytes = 0;
       $needle = mb_strtolower(trim($query));
       $registry = \Drupal::state()->get('mcp_apps.demo_data', []);
@@ -74,6 +76,7 @@ final class MediaPicker {
           'id' => (int) $media->id(),
           'name' => $media->label(),
           'thumbnail' => \Drupal::service('file_url_generator')->generateAbsoluteString($file->getFileUri()),
+          'hero_thumbnail' => ImageStyle::load(HeroArticle::IMAGE_STYLE)?->buildUrl($file->getFileUri()),
           'alt' => $alt,
           'width' => (int) $field->width,
           'height' => (int) $field->height,
@@ -96,6 +99,11 @@ final class MediaPicker {
             $thumbnails[(int) $media->id()] = $thumbnail;
             $thumbnail_bytes += strlen($thumbnail);
           }
+          $hero_thumbnail = $this->thumbnail($file->getFileUri(), HeroArticle::IMAGE_STYLE);
+          if ($hero_thumbnail !== NULL && $thumbnail_bytes + strlen($hero_thumbnail) <= 4 * 1024 * 1024) {
+            $hero_thumbnails[(int) $media->id()] = $hero_thumbnail;
+            $thumbnail_bytes += strlen($hero_thumbnail);
+          }
         }
       }
       if ($article_title !== '' && $node_id === 0) {
@@ -117,7 +125,12 @@ final class MediaPicker {
         'posts' => $posts,
         'node_id' => $node_id,
         'limited' => count($ids) > 200,
-        '_app_meta' => ['drupal/media-picker' => ['thumbnails' => $thumbnails]],
+        '_app_meta' => [
+          'drupal/media-picker' => [
+            'thumbnails' => $thumbnails,
+            'heroThumbnails' => $hero_thumbnails,
+          ],
+        ],
         'message' => sprintf('Found %d accessible Drupal images%s. Choose a draft post and review its hero change before saving, or send the media selection to chat. Opening changes no content.', count($items), $query !== '' ? ' matching "' . $query . '"' : ''),
       ];
     });
@@ -126,8 +139,8 @@ final class MediaPicker {
   /**
    * Embeds a Drupal-generated derivative of an already access-checked image.
    */
-  private function thumbnail(string $uri): ?string {
-    $style = ImageStyle::load('mcp_apps_picker');
+  private function thumbnail(string $uri, string $style_name = 'mcp_apps_picker'): ?string {
+    $style = ImageStyle::load($style_name);
     if ($style === NULL) {
       return NULL;
     }
@@ -158,7 +171,8 @@ final class MediaPicker {
     $result = $this->open();
     $thumbnails = $result->meta['drupal/media-picker']['thumbnails'] ?? [];
     $data = json_encode($thumbnails, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
-    $html = str_replace('</head>', '<script>globalThis.__MEDIA_THUMBNAILS__=' . $data . ';</script></head>', $resource->text);
+    $heroes = json_encode($result->meta['drupal/media-picker']['heroThumbnails'] ?? [], JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $html = str_replace('</head>', '<script>globalThis.__MEDIA_THUMBNAILS__=' . $data . ';globalThis.__MEDIA_HERO_THUMBNAILS__=' . $heroes . ';</script></head>', $resource->text);
     return new TextResourceContents(self::URI, McpApps::MIME_TYPE, $html, $resource->meta);
   }
 

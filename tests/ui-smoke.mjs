@@ -61,9 +61,12 @@ try {
   const { dom, document: doc, fixture, requests, errors } = media;
   assert.equal(doc.querySelectorAll('.media-card').length, fixture.structuredContent.media.length);
   assert([...doc.querySelectorAll('.media-card img')].every((image) => image.src.startsWith('data:image/')), 'MCP images must display without network access to DDEV.');
+  const initialHero = fixture.structuredContent.posts[0].hero.id;
+  assert.equal(doc.querySelector('#article-image img').src, fixture._meta['drupal/media-picker'].heroThumbnails[initialHero], 'Article preview uses its Drupal-cropped hero derivative.');
   assert(requests.some((request) => request.method === 'ui/initialize'));
   const item = fixture.structuredContent.media[0];
   doc.querySelector(`.media-card[data-id="${item.id}"]`).click();
+  assert.equal(doc.querySelector('#article-image img').src, fixture._meta['drupal/media-picker'].heroThumbnails[item.id], 'Proposed hero uses the same website crop.');
   assert.equal(doc.querySelector('#selection-detail').hidden, false);
   assert.equal(doc.querySelector('#selection-id').textContent, `Media #${item.id}`);
   assert.equal(doc.querySelector('#use-media').disabled, false);

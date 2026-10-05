@@ -17,7 +17,8 @@ After enabling or changing discovery, rebuild Drupal caches and refresh the host
 
 - Real, access-checked Drupal image Media, with a searchable thumbnail grid.
 - Open an article by `node_id` or `article_title`. Two dedicated demo article drafts are seeded.
-- Compare current and proposed heroes in an Olivero-inspired preview using real article title, date and summary. This is a compact preview, not Drupal's full theme renderer or an imported Drupal CMS demo recipe.
+- Compare current and proposed heroes using the same article card rendered on the demo node page. The app bundle and Drupal library share `ui/article.css`, and both use Drupal's `mcp_apps_hero` image style (1100 × 500, centred crop). Text wraps responsively to the available width. This is a dedicated demo presentation, not an imported Drupal CMS recipe.
+- The website displays article-specific alt text and tracks the referenced Media and image style in its render cache. Only full views of the demo article bundle use this presentation.
 - Select an image, edit article-specific alt text, then **Review hero change** and **Save hero to article**. The app-only `media_picker_save_hero` tool creates a new revision, preserving article title/body and draft status. Shared Media alt text is unchanged.
 - The first implementation supports the dedicated, unmoderated demo article bundle only. Published content and stale revisions are rejected. Arbitrary site bundles and moderation transitions need a later integration step.
 - Choose no article to use the original **Use this media** chat handoff without saving.
@@ -47,6 +48,8 @@ Resource: `ui://drupal/views-chart`.
 ```text
 src/Mcp/MediaPicker.php       Tool + HTML resource, real Media search
 src/Mcp/ViewsChart.php        Tool + HTML resource, real View execution
+src/HeroArticle.php          Shared article text and website rendering
+templates/                   Demo article template
 src/Mcp/DemoSupport.php       SDK result/resource helpers and Drupal Fiber handling
 src/McpAppsServiceProvider.php  Existing mcp_server SDK discovery extension point
 ui/                          Frontends using @modelcontextprotocol/ext-apps
@@ -82,6 +85,7 @@ Run `tests/cleanup_demos.php` through `ddev drush php:script` to remove tracked 
 ```sh
 ddev drush php:script web/modules/custom/mcp_apps/tests/backend_smoke.php
 ddev drush php:script web/modules/custom/mcp_apps/tests/hero_smoke.php
+ddev drush php:script web/modules/custom/mcp_apps/tests/article_presentation_smoke.php
 ddev exec python3 web/modules/custom/mcp_apps/tests/protocol_smoke.py
 ddev exec node web/modules/custom/mcp_apps/tests/ui-smoke.mjs
 ddev exec vendor/bin/phpcs --standard=Drupal,DrupalPractice web/modules/custom/mcp_apps/src web/modules/custom/mcp_apps/tests/seed_demos.php web/modules/custom/mcp_apps/tests/cleanup_demos.php web/modules/custom/mcp_apps/tests/backend_smoke.php

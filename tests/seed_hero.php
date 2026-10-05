@@ -13,12 +13,23 @@ use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\mcp_apps\Mcp\HeroWorkflow;
+use Drupal\mcp_apps\HeroArticle;
+use Drupal\image\Entity\ImageStyle;
+use Drupal\Component\Serialization\Yaml;
 
 $registry = \Drupal::state()->get('mcp_apps.demo_data', []);
 $registry['posts'] ??= [];
 $record = static function () use (&$registry): void {
   \Drupal::state()->set('mcp_apps.demo_data', $registry);
 };
+if (ImageStyle::load(HeroArticle::IMAGE_STYLE) === NULL) {
+  $path = \Drupal::service('extension.list.module')->getPath('mcp_apps');
+  $config = Yaml::decode(file_get_contents($path . '/config/install/image.style.mcp_apps_hero.yml'));
+  $style = ImageStyle::create($config);
+  $style->save();
+  $registry['config']['image.style.' . HeroArticle::IMAGE_STYLE] = $style->uuid();
+  $record();
+}
 $bundle = HeroWorkflow::BUNDLE;
 $type = NodeType::load($bundle);
 if ($type === NULL) {

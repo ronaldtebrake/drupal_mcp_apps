@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file
+ * Shared article presentation for the MCP Apps hero demo.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\mcp_apps\HeroArticle;
+use Drupal\mcp_apps\Mcp\HeroWorkflow;
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function mcp_apps_theme(): array {
+  return [
+    'mcp_apps_article' => [
+      'variables' => ['article' => [], 'hero' => NULL],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_view_alter().
+ */
+function mcp_apps_entity_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display): void {
+  if ($entity instanceof NodeInterface && $entity->bundle() === HeroWorkflow::BUNDLE && ($build['#view_mode'] ?? '') === 'full') {
+    $article = HeroArticle::build($entity);
+    // Preserve the node view builder's access/cache metadata and entity context.
+    foreach (array_keys($build) as $key) {
+      if (!str_starts_with((string) $key, '#')) {
+        unset($build[$key]);
+      }
+    }
+    unset($build['#theme']);
+    $build['article'] = $article;
+  }
+}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\mcp_apps\Mcp;
 
 use Drupal\media\MediaInterface;
+use Drupal\mcp_apps\HeroArticle;
 use Drupal\node\NodeInterface;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Schema\Result\CallToolResult;
@@ -146,10 +147,7 @@ final class HeroWorkflow {
     }
     return [
       'id' => (int) $node->id(),
-      'title' => $node->label(),
-      'summary' => $node->hasField('body') && $node->get('body')->access('view') ? trim(strip_tags((string) ($node->get('body')->summary ?: $node->get('body')->value))) : '',
-      'byline' => 'Editorial team',
-      'date' => gmdate('F j, Y', (int) $node->getCreatedTime()),
+      ...HeroArticle::content($node),
       'revision' => $this->token($node),
       'hero' => $hero,
       'alt' => $node->hasField(self::ALT_FIELD) && $node->get(self::ALT_FIELD)->access('view') ? (string) $node->get(self::ALT_FIELD)->value : '',
