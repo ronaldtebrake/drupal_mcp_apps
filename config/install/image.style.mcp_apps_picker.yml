@@ -1,0 +1,14 @@
+langcode: en
+status: true
+dependencies: { }
+name: mcp_apps_picker
+label: 'MCP Apps picker thumbnail'
+effects:
+  13b1a819-10fb-4bc8-b750-84070b0bac5d:
+    uuid: 13b1a819-10fb-4bc8-b750-84070b0bac5d
+    id: image_scale
+    weight: 0
+    data:
+      width: 640
+      height: 640
+      upscale: false

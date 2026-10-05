@@ -1,0 +1,50 @@
+[
+  {
+    "key": "rotterdam-aerial",
+    "name": "Rotterdam \u00b7 Erasmus Bridge",
+    "alt": "Aerial view of the Erasmus Bridge and Rotterdam waterfront",
+    "credit": "Arnout van Nieuwkoop / Unsplash",
+    "source": "https://unsplash.com/photos/mzrPiJ2Rnxc",
+    "file": "rotterdam-aerial.jpg"
+  },
+  {
+    "key": "rotterdam-sunset",
+    "name": "Rotterdam \u00b7 Golden hour",
+    "alt": "Rotterdam skyline and Erasmus Bridge across the river at sunset",
+    "credit": "Alexander Psiuk / Unsplash",
+    "source": "https://unsplash.com/photos/A61IRF1WbDQ",
+    "file": "rotterdam-sunset.jpg"
+  },
+  {
+    "key": "rotterdam-cables",
+    "name": "Rotterdam \u00b7 Bridge details",
+    "alt": "The cables and white pylon of Rotterdam's Erasmus Bridge against a blue sky",
+    "credit": "micheile henderson / Unsplash",
+    "source": "https://unsplash.com/photos/Lt6yjrvAzu4",
+    "file": "rotterdam-cables.jpg"
+  },
+  {
+    "key": "rotterdam-night",
+    "name": "Rotterdam \u00b7 City lights",
+    "alt": "The Erasmus Bridge with Rotterdam buildings and evening light",
+    "credit": "Roel Oosterwijk / Unsplash",
+    "source": "https://unsplash.com/photos/x126P__Fw3A",
+    "file": "rotterdam-night.jpg"
+  },
+  {
+    "key": "conference-audience",
+    "name": "Conference \u00b7 The audience",
+    "alt": "Audience seated in a conference hall during a presentation",
+    "credit": "Ufoma Ojo / Unsplash",
+    "source": "https://unsplash.com/photos/MxHjumNWlkI",
+    "file": "conference-audience.jpg"
+  },
+  {
+    "key": "conference-hall",
+    "name": "Conference \u00b7 A shared moment",
+    "alt": "Audience gathered in a large hall for a presentation",
+    "credit": "Mitchell Leach / Unsplash",
+    "source": "https://unsplash.com/photos/KngxPA69IKw",
+    "file": "conference-hall.jpg"
+  }
+]

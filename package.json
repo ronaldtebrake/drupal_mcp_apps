@@ -1,0 +1,16 @@
+{
+  "name": "drupal-mcp-apps-demos",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ui/build.mjs",
+    "test:ui": "node tests/ui-smoke.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.0.0"
+  }
+}

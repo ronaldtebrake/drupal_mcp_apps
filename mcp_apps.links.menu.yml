@@ -1,0 +1,14 @@
+mcp_apps.media_preview:
+  title: 'MCP Apps: Media picker'
+  route_name: mcp_apps.preview
+  route_parameters:
+    demo: media-picker
+  parent: system.admin_content
+  weight: 30
+mcp_apps.chart_preview:
+  title: 'MCP Apps: Views chart'
+  route_name: mcp_apps.preview
+  route_parameters:
+    demo: views-chart
+  parent: system.admin_content
+  weight: 31

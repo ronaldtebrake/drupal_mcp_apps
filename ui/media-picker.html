@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drupal Media Picker</title><!-- APP_STYLE --></head>
+<body class="hero-workflow"><main class="shell">
+  <div class="topline"><div class="brand"><span class="brand-mark" aria-hidden="true">d</span>Drupal / Media library</div><span class="badge"><span class="dot"></span><span id="connection">Connecting…</span></span></div>
+  <header class="hero"><p class="eyebrow">Article / Hero image</p><h1>Give your story the right image.</h1><p class="subtitle">Choose an article, try a new hero, and see how it feels before saving.</p></header>
+  <div class="article-target"><label for="article-select">Editing article</label><select id="article-select"><option value="">Choose an article…</option></select><span id="article-status" class="tag">DRAFT</span></div>
+  <section class="article-preview panel" aria-label="Article hero preview">
+    <div class="preview-toolbar"><span>Article preview · Olivero</span><div class="segmented"><button id="show-current" type="button" aria-pressed="true">Current hero</button><button id="show-proposed" type="button" aria-pressed="false">Proposed hero</button></div></div>
+    <div class="olivero-preview"><div class="olivero-brand">Drupal <span>Stories &amp; ideas</span></div><article><p class="article-kicker">ARTICLE</p><h2 id="article-title">Choose an article to begin</h2><p id="article-byline" class="article-byline"></p><div id="article-image" class="article-image"></div><p id="article-summary" class="article-summary"></p></article></div>
+    <p class="preview-disclaimer">Preview uses your article content and Olivero’s colours and typography. Image cropping may differ on the full site.</p>
+  </section>
+  <p id="preview-note" class="notice" hidden>Read-only browser preview. Open <strong>media_picker_open</strong> in an MCP Apps host to search Drupal, review a hero change and save an article revision.</p>
+  <p id="error" class="notice error" role="alert" hidden></p>
+  <form id="search-form" class="toolbar"><label class="search"><span class="field-label" style="margin:0 0 6px">Search your library</span><input id="search" type="search" placeholder="Try Rotterdam, bridge, or conference…" maxlength="200"></label><button class="secondary" id="search-drupal" type="submit">Search Drupal ↗</button></form>
+  <div class="toolbar"><span id="result-count" class="muted loading" role="status">Loading your media library…</span><span class="tag">IMAGE MEDIA</span></div>
+  <div class="media-layout"><section id="media-grid" class="media-grid" aria-label="Choose an image"></section>
+  <aside class="panel inspector" aria-label="Selected media"><div class="panel-head"><h2 style="margin:0">Your selection</h2><span id="selection-id" class="muted">—</span></div><div id="selection-empty" class="placeholder"><div class="placeholder-symbol" aria-hidden="true">▧</div><h2>See it. Choose it.</h2><p>Pick an image to preview it and refine its alt text.</p></div><div id="selection-detail" class="inspector-body" hidden></div></aside></div>
+  <footer class="footer"><span>Drupal Media · Article revisions · Save after review</span><span>Demo 01 / Article hero workflow</span></footer>
+</main><!-- APP_SCRIPT --></body></html>
