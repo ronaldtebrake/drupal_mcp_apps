@@ -92,7 +92,7 @@ Or call the tool explicitly:
 {"name":"tool_api__media_picker_open","arguments":{"article_title":"A weekend of discovery in Rotterdam"}}
 ```
 
-Choose an image, edit article-specific alt text, compare current and proposed heroes, then choose **Review hero change** and **Save hero to article**. Saving uses the app-visible `tool_api__media_picker_save_hero` tool. It creates an unpublished revision and preserves the title, body, and shared Media alt text. Open the article's URL to compare the actual Drupal page with the app preview; article IDs vary between sites.
+Choose an image, edit article-specific alt text, compare current and proposed heroes, then choose **Save hero to article**. The picker stays on the requested article. Saving uses the app-visible `tool_api__media_picker_save_hero` tool. It creates an unpublished revision and preserves the title, body, and shared Media alt text. Open the article's URL to compare the actual Drupal page with the app preview; article IDs vary between sites.
 
 The HTML resource is `ui://drupal/media-picker`, served as `text/html;profile=mcp-app`. A host must support MCP Apps to render it. Ordinary MCP clients receive useful text and structured results. The optional Drupal page `/admin/content/mcp-apps/media-picker` is a read-only browser preview; it cannot replace MCP host initialization or save from the app.
 

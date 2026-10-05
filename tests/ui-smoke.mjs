@@ -68,14 +68,13 @@ try {
   const alt = 'My accessible hero image description';
   doc.querySelector('#proposed-alt').value = alt;
   doc.querySelector('#proposed-alt').dispatchEvent(new dom.window.Event('input', { bubbles: true }));
-  doc.querySelector('#use-media').click();
-  assert(doc.querySelector('#confirm-hero'), 'Review must precede save.');
-  assert(!requests.some((request) => request.method === 'tools/call'), 'Review must not save content.');
+  assert(!doc.querySelector('#article-select'), 'The workflow cannot switch articles.');
+  assert(!requests.some((request) => request.method === 'tools/call'), 'Selecting and previewing must not save content.');
   assert.equal(doc.querySelector('#article-image img').alt, alt);
   doc.querySelector('#show-current').click();
   assert.equal(doc.querySelector('#show-current').getAttribute('aria-pressed'), 'true');
   doc.querySelector('#show-proposed').click();
-  doc.querySelector('#confirm-hero').click();
+  doc.querySelector('#use-media').click();
   await waitFor(() => doc.querySelector('#selection-feedback').textContent.includes('saved'), 'hero save');
   const save = requests.find((request) => request.method === 'tools/call' && request.params.name === 'tool_api__media_picker_save_hero');
   assert.equal(save.params.arguments.alt, alt);
@@ -91,7 +90,7 @@ try {
   await waitFor(() => doc.querySelector('#result-count').textContent.includes('matching') && !doc.querySelector('#search-drupal').disabled, 'media search completion');
   assert.equal(requests.find((request) => request.method === 'tools/call' && request.params.name === 'tool_api__media_picker_open').params.arguments.query, 'Rotterdam');
   assert.equal(errors.length, 0, errors.map((error) => error.message).join('\n'));
-  console.log('PASS: Media SDK handshake, inline images, article preview, current/proposed toggle, review before save and server search.');
+  console.log('PASS: Media SDK handshake, inline images, article preview, current/proposed toggle, explicit one-click save and server search.');
 } finally { media.dom.window.close(); }
 
 const data = structuredClone(media.fixture.structuredContent);

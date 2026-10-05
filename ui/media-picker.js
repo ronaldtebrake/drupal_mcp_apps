@@ -1,6 +1,6 @@
 import { $, element, host, imageUrl, showError } from './common.js';
 
-const state = { data: null, thumbnails: {}, heroThumbnails: {}, library: new Map(), post: null, proposed: false, reviewing: false, query: '', selected: null, alt: '', sent: false, busy: false };
+const state = { data: null, thumbnails: {}, heroThumbnails: {}, library: new Map(), post: null, proposed: false, query: '', selected: null, alt: '', sent: false, busy: false };
 const bridge = host('media-picker', 'Drupal Media Picker', receive);
 
 function receive(result) {
@@ -9,7 +9,7 @@ function receive(result) {
   if (data?.app === 'media-picker-hero-saved') {
     state.post = data.post;
     state.data.posts = state.data.posts.map((post) => post.id === data.post.id ? data.post : post);
-    state.reviewing = false; state.selected = null; state.proposed = false;
+    state.selected = null; state.proposed = false;
     render(); $('selection-feedback').textContent = data.message;
     bridge.context({ article: { id: data.post.id, title: data.post.title }, saved_hero: data.post.hero });
     return;
@@ -20,11 +20,7 @@ function receive(result) {
   state.heroThumbnails = { ...globalThis.__MEDIA_HERO_THUMBNAILS__, ...state.heroThumbnails, ...result._meta?.['drupal/media-picker']?.heroThumbnails };
   [...data.media, ...(data.hero_media || [])].forEach((item) => state.library.set(item.id, item));
   const target = data.node_id || state.post?.id;
-  state.post = data.posts?.find((post) => post.id === target) || data.posts?.[0] || null;
-  const select = $('article-select'); select.replaceChildren(element('option', '', 'Choose an article…')); select.firstChild.value = '';
-  for (const post of data.posts || []) { const option = element('option', '', post.title); option.value = post.id; select.append(option); }
-  select.value = state.post?.id || '';
-  state.reviewing = false;
+  state.post = target ? data.posts?.find((post) => post.id === target) || null : data.posts?.[0] || null;
   state.query = '';
   $('search').value = '';
   if (state.selected) {
@@ -81,7 +77,6 @@ function renderArticle() {
   $('article-title').textContent = post?.title || 'Choose an article to begin';
   $('article-byline').textContent = post ? `By ${post.byline} · ${post.date}` : '';
   $('article-summary').textContent = post?.summary || '';
-  $('article-status').textContent = post?.status === 'published' ? 'PUBLISHED' : 'DRAFT · NOT PUBLISHED';
   $('show-current').setAttribute('aria-pressed', String(!state.proposed));
   $('show-proposed').setAttribute('aria-pressed', String(state.proposed));
   $('show-proposed').disabled = !state.selected;
@@ -106,13 +101,13 @@ function renderDetail() {
   const label = element('label', 'field-label', 'Alt text for your article'); label.htmlFor = 'proposed-alt';
   const input = element('textarea', 'alt-input'); input.id = 'proposed-alt'; input.maxLength = 500; input.value = state.alt;
   input.disabled = state.busy;
-  input.addEventListener('input', () => { state.alt = input.value; state.sent = false; state.reviewing = false; $('use-media').textContent = state.post ? 'Review hero change →' : 'Use this media →'; $('selection-feedback').textContent = ''; document.getElementById('confirm-hero')?.remove(); renderArticle(); bridge.context({ selected_media: { id: item.id, name: item.name, proposed_alt: state.alt } }); });
+  input.addEventListener('input', () => { state.alt = input.value; state.sent = false; $('use-media').textContent = state.post ? 'Save hero to article' : 'Use this media →'; $('selection-feedback').textContent = ''; renderArticle(); bridge.context({ selected_media: { id: item.id, name: item.name, proposed_alt: state.alt } }); });
   box.append(label, input, element('p', 'caption', 'Describe what matters in the image. This is a proposed value; the stored Media alt text stays unchanged.'));
   if (item.credit) box.append(element('p', 'credit', `${item.credit}. Sample stock photography; not actual DrupalCon coverage.`));
-  const button = element('button', 'primary', state.post ? 'Review hero change →' : state.sent ? 'Selection sent ✓' : 'Use this media →'); button.id = 'use-media'; button.type = 'button';
+  const button = element('button', 'primary', state.post ? 'Save hero to article' : state.sent ? 'Selection sent ✓' : 'Use this media →'); button.id = 'use-media'; button.type = 'button';
   button.disabled = state.busy || !bridge.connected || (state.post ? !state.post.can_update || !state.alt.trim() : !bridge.app?.getHostCapabilities()?.message);
   button.addEventListener('click', async () => {
-    if (state.post) { state.reviewing = true; renderDetail(); return; }
+    if (state.post) { await saveHero(item); return; }
     state.busy = true; button.disabled = true; input.disabled = true;
     try {
       await bridge.app.sendMessage({ role: 'user', content: [{ type: 'text', text: `I selected this Drupal image for my article. No Drupal content has been changed.\n${JSON.stringify({ media_id: item.id, name: item.name, proposed_alt: state.alt })}` }] });
@@ -122,29 +117,20 @@ function renderDetail() {
   });
   box.append(button, element('p', 'status', bridge.preview ? 'Chat handoff is available in the MCP App.' : ''));
   box.lastChild.id = 'selection-feedback'; box.lastChild.setAttribute('role', 'status');
-  if (state.reviewing && state.post) {
-    const review = element('div', 'hero-review');
-    review.append(element('strong', '', `Update “${state.post.title}”`), element('p', '', `${state.post.hero?.name || 'No hero'} → ${item.name}`), element('p', 'caption', 'Saves a new article revision. The article stays unpublished. Shared Media alt text stays unchanged.'));
-    const confirm = element('button', 'primary', 'Save hero to article'); confirm.id = 'confirm-hero'; confirm.type = 'button'; confirm.disabled = !bridge.connected || state.busy;
-    confirm.addEventListener('click', async () => {
-      if (state.busy) return;
-      state.busy = true; renderDetail(); $('article-select').disabled = true;
-      document.querySelectorAll('.media-card').forEach((card) => { card.disabled = true; });
-      try {
-        const result = await bridge.app.callServerTool({ name: 'tool_api__media_picker_save_hero', arguments: { node_id: state.post.id, media_id: item.id, alt: state.alt.trim(), revision: state.post.revision } });
-        if (result.isError) throw new Error(result.content?.[0]?.text || 'The hero could not be saved. Refresh and try again.');
-        receive(result);
-      } catch (error) { showError(error); }
-      finally { state.busy = false; $('article-select').disabled = false; if (state.selected) render(); else { document.querySelectorAll('.media-card').forEach((card) => { card.disabled = false; }); $('selection-empty').append($('selection-feedback')); } }
-    });
-    review.append(confirm); box.append(review);
-  }
 }
 
-$('article-select').addEventListener('change', (event) => {
-  state.post = state.data.posts.find((post) => post.id === Number(event.target.value)) || null;
-  state.selected = null; state.proposed = false; state.reviewing = false; state.alt = ''; render();
-});
+async function saveHero(item) {
+  if (state.busy || !state.post?.can_update || !bridge.connected || !state.alt.trim()) return;
+  state.busy = true; renderDetail();
+  document.querySelectorAll('.media-card').forEach((card) => { card.disabled = true; });
+  try {
+    const result = await bridge.app.callServerTool({ name: 'tool_api__media_picker_save_hero', arguments: { node_id: state.post.id, media_id: item.id, alt: state.alt.trim(), revision: state.post.revision } });
+    if (result.isError) throw new Error(result.content?.[0]?.text || 'The hero could not be saved. Refresh and try again.');
+    receive(result);
+  } catch (error) { showError(error); }
+  finally { state.busy = false; if (state.selected) render(); else { document.querySelectorAll('.media-card').forEach((card) => { card.disabled = false; }); $('selection-empty').append($('selection-feedback')); } }
+}
+
 $('show-current').addEventListener('click', () => { state.proposed = false; renderArticle(); });
 $('show-proposed').addEventListener('click', () => { state.proposed = true; renderArticle(); });
 
