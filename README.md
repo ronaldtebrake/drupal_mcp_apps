@@ -37,18 +37,18 @@ If your project prompts about standard Composer plugins such as `symfony/runtime
 
 ### 2. Apply the bundled upstream patches
 
-Run these commands before enabling the module:
+The module declares its patches in `composer.json` under `extra.patches`. Composer Patches discovers them from the installed module; no helper script or root-project patch declarations are needed. Patch URLs point to an immutable Git commit and include SHA-256 checksums. The three contrib releases remain pinned to the versions the patches target.
+
+On an existing project with a patch lock file, refresh its patch collection and reapply before enabling the module:
 
 ```sh
-php web/modules/contrib/mcp_apps/scripts/configure_composer.php
-composer update drupal/mcp_server drupal/tool drupal/mcp_server_tool_bridge cweagans/composer-patches --no-interaction
 composer patches-relock
 composer patches-repatch
 ```
 
-The helper merges the three local patches into the **site's root composer.json**, calculates their SHA-256 hashes, and preserves unrelated patches. The three contrib releases are pinned because these patches target specific release archives. `patches-repatch` reinstalls those packages and applies the patches through Composer.
+These standard commands also provide an explicit way to verify the patches after installation. Commit your site's `composer.json`, `composer.lock`, and `patches.lock.json`. The patch source files remain in this module's `patches/` directory for maintainer review. Dependency patch discovery must be enabled (the Composer Patches default); see [defining patches in dependencies](https://docs.cweagans.net/composer-patches/usage/defining-patches/#dependencies).
 
-Commit your site's `composer.json`, `composer.lock`, and `patches.lock.json`. Bundled patch files live in this module's `patches/` directory. Local paths must be registered in the consuming project's root; dependency-relative patch paths are not supported by [Composer Patches](https://docs.cweagans.net/composer-patches/usage/defining-patches/).
+If upgrading from the earlier helper-based setup, remove its three MCP Apps entries from the site's root `extra.patches` before relocking. Preserve unrelated patches.
 
 ### 3. Install Drupal and enable the demo
 

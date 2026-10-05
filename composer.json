@@ -14,5 +14,33 @@
     "drupal/simple_oauth": "^6.1",
     "e0ipso/simple_oauth_21": "^1.13",
     "cweagans/composer-patches": "^2.0"
+  },
+  "extra": {
+    "patches": {
+      "drupal/mcp_server": [
+        {
+          "description": "MCP Apps proof of concept: mcp_server",
+          "url": "https://raw.githubusercontent.com/ronaldtebrake/drupal_mcp_apps/a7b5f3c5a9cd9af74e42df9acae56e4bd1a0f31e/patches/mcp_server-mcp-apps.patch",
+          "sha256": "71823e8f1501203ffae4ee5ed2addbc9e1f4bdafdcd0532b2480d20302326cf2",
+          "depth": 1
+        }
+      ],
+      "drupal/tool": [
+        {
+          "description": "MCP Apps proof of concept: tool",
+          "url": "https://raw.githubusercontent.com/ronaldtebrake/drupal_mcp_apps/a7b5f3c5a9cd9af74e42df9acae56e4bd1a0f31e/patches/tool-mcp-apps.patch",
+          "sha256": "7b11378ba56ab7897cb5cdcb6b6a288c55de2ec9e515063cc9e885ad3ba8caaf",
+          "depth": 1
+        }
+      ],
+      "drupal/mcp_server_tool_bridge": [
+        {
+          "description": "MCP Apps proof of concept: mcp_server_tool_bridge",
+          "url": "https://raw.githubusercontent.com/ronaldtebrake/drupal_mcp_apps/a7b5f3c5a9cd9af74e42df9acae56e4bd1a0f31e/patches/mcp_server_tool_bridge-mcp-apps.patch",
+          "sha256": "e0652546ebe3b63f79b929c6db824e152810db9afbeb4d6c024cca8149b4651f",
+          "depth": 1
+        }
+      ]
+    }
   }
 }
