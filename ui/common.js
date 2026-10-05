@@ -31,7 +31,7 @@ export function host(demo, title, receive) {
   };
   bridge.start = () => {
     if (preview) {
-      $('connection').textContent = 'Browser preview';
+      document.body.dataset.connection = 'preview';
       $('preview-note').hidden = false;
       receive(globalThis.__DEMO_PREVIEW__.structuredContent ? globalThis.__DEMO_PREVIEW__ : { structuredContent: globalThis.__DEMO_PREVIEW__ });
       return;
@@ -40,7 +40,7 @@ export function host(demo, title, receive) {
     app.ontoolcancelled = () => { $('error').textContent = 'Opening was cancelled. Call the demo tool again.'; $('error').hidden = false; };
     app.connect().then(() => {
       bridge.connected = true;
-      $('connection').textContent = 'Connected to Drupal';
+      document.body.dataset.connection = 'connected';
       document.dispatchEvent(new Event('host-connected'));
       setTimeout(() => {
         if (document.body.dataset.ready) return;

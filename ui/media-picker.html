@@ -1,13 +1,11 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drupal Media Picker</title><!-- APP_STYLE --></head>
 <body class="hero-workflow"><main class="shell">
-  <div class="topline"><div class="brand"><span class="brand-mark" aria-hidden="true">d</span>Drupal / Media library</div><span class="badge"><span class="dot"></span><span id="connection">Connecting…</span></span></div>
   <header class="hero"><h1>Update article hero</h1><p class="subtitle">Choose an image and preview it before saving.</p></header>
   <div class="article-target"><label for="article-select">Editing article</label><select id="article-select"><option value="">Choose an article…</option></select><span id="article-status" class="tag">DRAFT</span></div>
   <section class="article-preview panel" aria-label="Article hero preview">
     <div class="preview-toolbar"><span>Article preview · Olivero</span><div class="segmented"><button id="show-current" type="button" aria-pressed="true">Current hero</button><button id="show-proposed" type="button" aria-pressed="false">Proposed hero</button></div></div>
     <div class="olivero-preview"><div class="olivero-brand">Drupal <span>Stories &amp; ideas</span></div><article><p class="article-kicker">ARTICLE</p><h2 id="article-title" class="mcp-article-title">Choose an article to begin</h2><p id="article-byline" class="article-byline"></p><div id="article-image" class="article-image"></div><p id="article-summary" class="article-summary"></p></article></div>
-    <p class="preview-disclaimer">Same article layout and hero crop as the website. Text wraps to the available screen width.</p>
   </section>
   <p id="preview-note" class="notice" hidden>Read-only browser preview. Open <strong>tool_api__media_picker_open</strong> in an MCP Apps host to search Drupal, review a hero change and save an article revision.</p>
   <p id="error" class="notice error" role="alert" hidden></p>

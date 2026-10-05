@@ -47,7 +47,7 @@ async function setup(demo) {
       };
     },
   });
-  await waitFor(() => dom.window.document.body.dataset.ready && dom.window.document.querySelector('#connection').textContent === 'Connected to Drupal', `${demo} SDK handshake`);
+  await waitFor(() => dom.window.document.body.dataset.ready && dom.window.document.body.dataset.connection === 'connected', `${demo} SDK handshake`);
   return { dom, document: dom.window.document, fixture, requests, errors, html };
 }
 
