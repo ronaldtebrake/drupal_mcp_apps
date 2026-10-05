@@ -73,20 +73,27 @@ final class HeroWorkflow {
           throw new \InvalidArgumentException('The selected image is unavailable to this account.');
         }
         $before = $this->values($node);
-        $node->set(self::MEDIA_FIELD, ['target_id' => $media_id]);
-        $node->set(self::ALT_FIELD, trim($alt));
-        $node->setNewRevision(TRUE);
-        $node->isDefaultRevision(TRUE);
-        $node->setRevisionUserId((int) \Drupal::currentUser()->id());
-        $node->setRevisionCreationTime(\Drupal::time()->getCurrentTime());
-        $node->setRevisionLogMessage('Hero image and post-specific alt text updated from the MCP Media picker.');
+        $node = $this->runTool('tool_belt:field_set_value', [
+          'entity' => $node,
+          'field_name' => self::MEDIA_FIELD,
+          'value' => [['target_id' => $media_id]],
+        ], 'updated_entity');
+        $node = $this->runTool('tool_belt:field_set_value', [
+          'entity' => $node,
+          'field_name' => self::ALT_FIELD,
+          'value' => [['value' => trim($alt)]],
+        ], 'updated_entity');
+        $node = $this->runTool('tool_belt:entity_revision_add', [
+          'entity' => $node,
+          'revision_log' => 'Hero image and post-specific alt text updated from the MCP Media picker.',
+        ], 'revised_entity');
         $violations = $node->validate();
         if (count($violations)) {
           throw new \InvalidArgumentException('Drupal rejected the hero change: ' . $violations->get(0)->getMessage());
         }
         $transaction = \Drupal::database()->startTransaction();
         try {
-          $node->save();
+          $this->runTool('tool_belt:entity_save', ['entity' => $node], 'saved_entity');
           $storage->resetCache([$node_id]);
           $saved = $storage->load($node_id);
           $after = $this->values($saved);
@@ -125,6 +132,28 @@ final class HeroWorkflow {
         $lock->release($lock_key);
       }
     });
+  }
+
+  /**
+   * Runs a community tool with native entity values and checked access.
+   */
+  private function runTool(string $id, array $inputs, string $output): NodeInterface {
+    $tool = \Drupal::service('plugin.manager.tool')->createInstance($id);
+    foreach ($inputs as $name => $value) {
+      $tool->setInputValue($name, $value);
+    }
+    if (!$tool->access()) {
+      throw new \InvalidArgumentException('Drupal denied a step in the hero update.');
+    }
+    $tool->execute();
+    if (!$tool->getResultStatus()) {
+      throw new \InvalidArgumentException('Drupal could not complete the hero update.');
+    }
+    $entity = $tool->getOutputValue($output);
+    if (!$entity instanceof NodeInterface) {
+      throw new \RuntimeException('The hero update tool returned no article.');
+    }
+    return $entity;
   }
 
   /**

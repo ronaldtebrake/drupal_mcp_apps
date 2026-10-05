@@ -6,6 +6,7 @@ core_version_requirement: ^11
 dependencies:
   - mcp_server:mcp_server
   - tool:tool
+  - tool_belt:tool_belt_content
   - mcp_server_tool_bridge:mcp_server_tool_bridge
   - mcp_server_oauth:mcp_server_oauth
   - simple_oauth_21:simple_oauth_pkce

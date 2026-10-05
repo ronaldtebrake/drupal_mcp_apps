@@ -111,6 +111,12 @@ Drupal node view/update, field view/edit, and file access checks remain in force
 
 No permissions are automatically granted to anonymous or authenticated roles. A picker-only user cannot save. Denied calls return no article/image data and make no content changes. The implementation rejects published or moderated articles, stale revision tokens, inaccessible Media, and private files.
 
+## Hero workflow and Tool Belt
+
+The app's hero-update tool is a narrow server-side orchestrator. It invokes Tool Belt's `field_set_value` twice (Media reference and article-specific alt text), then `entity_revision_add` and `entity_save` through Tool API. Native entity outputs pass between tools within one request. Each tool's access check runs before execution; a failed step stops the update. These generic tools do not need to be exposed individually through MCP Server Tool Bridge.
+
+The orchestrator retains the workflow-specific checks: draft-only eligibility, accessible image Media, allowed fields, stale-preview protection, entity validation, and transaction rollback if a save hook changes unrelated content or publishes the article. It is tested with the released Tool Belt `1.0.0-alpha5`, including on the separate Agent Access installation.
+
 ## What the three patches demonstrate
 
 ```text
