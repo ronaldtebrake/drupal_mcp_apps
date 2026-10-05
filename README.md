@@ -2,26 +2,21 @@
 
 **AI disclosure:** This module, its local patches, and this documentation were developed with assistance from OpenAI Codex. The implementation is a proof of concept backed by automated tests; the proposed contrib APIs have not been merged upstream.
 
-A visual article-editing workflow that demonstrates MCP Apps through **Drupal Tool API**, **MCP Server Tool Bridge**, and **MCP Server**. Ask an MCP Apps host to update an article's hero, browse Drupal Media, preview the proposed crop, and confirm a new draft revision.
+A visual article-editing workflow built on top of the [Agent Access recipe](https://www.drupal.org/project/agent_access), extending its Drupal Tool API, MCP Server Tool Bridge, and MCP Server foundation with MCP Apps. Ask an MCP Apps host to update an article's hero, browse Drupal Media, preview the proposed crop, and confirm a new draft revision.
 
 The module includes its HTML/JavaScript bundle and sample photos. Installation does not require Node.js, an existing content type, an existing Media type, or this repository author's development site.
 
-## Install on a separate Drupal site
+## Install on top of Agent Access
 
-Use Drupal 11, PHP 8.3+, Composer 2, Git, and the PHP extensions required by Drupal, including GD and OpenSSL. Serve Drupal's `web/` directory at an HTTPS URL that your MCP host can reach.
+This demo's installation starts with **Agent Access** on an installed Drupal **11.4+** site. Follow the [Agent Access installation and connection documentation](https://www.drupal.org/project/agent_access) to apply the recipe, configure OAuth signing keys, and verify a connection to the site's HTTPS MCP endpoint. Its documentation owns the shared MCP/OAuth setup; the steps below add the interactive Media picker.
 
-For a new project:
+The tested recipe release is `drupal/agent_access:1.0.0-alpha2`. It supplies the starter `tool_api__entity_list` and `tool_api__entity_metadata` tools and the `drupal:mcp:connect` / `drupal:content:read` scopes. This module adds its own tools, UI resource, demo content, and editing scope. No changes to the Agent Access recipe are required.
 
-```sh
-composer create-project drupal/recommended-project:^11 mcp-apps-demo
-cd mcp-apps-demo
-```
+Use PHP 8.3+, Composer 2, Git, GD, and OpenSSL. Run the commands below from the site's Composer root. Examples assume the standard `web/` document root, `web/modules/contrib/` module path, and project-local Drush 13.
 
-For an existing Drupal project, start in its Composer root instead. The examples below assume the standard `web/` document root and `web/modules/contrib/` installer path.
+### 1. Install the MCP Apps extension
 
-### 1. Download the module and its dependencies
-
-The module is currently distributed through its GitHub repository. Alpha stability is needed for the OAuth companion; stable releases remain preferred.
+The demo is distributed through GitHub. Enable alpha stability for the existing experimental dependency stack while preferring stable packages:
 
 ```sh
 composer config repositories.mcp_apps vcs https://github.com/ronaldtebrake/drupal_mcp_apps.git
@@ -31,57 +26,24 @@ composer config allow-plugins.cweagans/composer-patches true
 composer require drupal/mcp_apps:dev-main drush/drush:^13 --with-all-dependencies
 ```
 
-Composer installs MCP Server, Tool API, the bridge, MCP Server OAuth, Simple OAuth, its OAuth 2.1 extensions, and their dependencies. The `drupal/mcp_server_oauth-mcp_server_oauth` package name in composer.json is Drupal.org's packaged OAuth module, whose Drupal machine name is `mcp_server_oauth`.
+The module declares its own dependencies for Composer and Drupal to validate. Agent Access remains the installation foundation. The demo pins MCP Server, Tool API, and the bridge to the releases listed below because its proposed patches target those archives. A site using newer releases must resolve those constraints before proceeding; do not apply these patches to different versions.
 
-If your project prompts about standard Composer plugins such as `symfony/runtime` or `php-http/discovery`, configure them according to your project's Composer policy. Composer Patches must be allowed for the next step.
+### 2. Apply the proposed contrib patches
 
-### 2. Apply the bundled upstream patches
+The module declares patches under `extra.patches` in its `composer.json`. Composer Patches discovers them from the installed dependency. URLs point to an immutable Git commit and include SHA-256 checksums; no helper script or root-project patch declarations are needed.
 
-The module declares its patches in `composer.json` under `extra.patches`. Composer Patches discovers them from the installed module; no helper script or root-project patch declarations are needed. Patch URLs point to an immutable Git commit and include SHA-256 checksums. The three contrib releases remain pinned to the versions the patches target.
-
-On an existing project with a patch lock file, refresh its patch collection and reapply before enabling the module:
+Refresh the site's patch lock and reapply before enabling the module:
 
 ```sh
 composer patches-relock
 composer patches-repatch
 ```
 
-These standard commands also provide an explicit way to verify the patches after installation. Commit your site's `composer.json`, `composer.lock`, and `patches.lock.json`. The patch source files remain in this module's `patches/` directory for maintainer review. Dependency patch discovery must be enabled (the Composer Patches default); see [defining patches in dependencies](https://docs.cweagans.net/composer-patches/usage/defining-patches/#dependencies).
+Commit the site's `composer.json`, `composer.lock`, and `patches.lock.json`. Patch source files remain in this module's `patches/` directory for maintainer review. Dependency patch discovery must be enabled (the Composer Patches default); see [defining patches in dependencies](https://docs.cweagans.net/composer-patches/usage/defining-patches/#dependencies).
 
 If upgrading from the earlier helper-based setup, remove its three MCP Apps entries from the site's root `extra.patches` before relocking. Preserve unrelated patches.
 
-### 3. Install Drupal and enable the demo
-
-If Drupal is not installed yet, install it using the normal installer and your database settings. For a disposable SQLite demo with PDO SQLite available, one option is:
-
-```sh
-vendor/bin/drush site:install standard \
-  --db-url=sqlite://localhost/sites/default/files/.ht.sqlite \
-  --account-name=admin --site-name="MCP Apps demo" -y
-```
-
-### Optional: use Agent Access as the site foundation
-
-For an installed Drupal **11.4+** site, [Agent Access](https://www.drupal.org/project/agent_access) provides the shared MCP/OAuth setup and starter content-reading tools. This is the recommended foundation when you also want to explore ordinary Drupal tools alongside the MCP App. The direct module installation above remains supported.
-
-After installing this module and applying its patches, run from the site root:
-
-```sh
-composer require drupal/agent_access:1.0.0-alpha2 --no-interaction
-vendor/bin/drush cr
-vendor/bin/drush recipe ../recipes/agent_access --uri=https://YOUR-DRUPAL-HOST -y
-```
-
-The explicit recipe version was tested with this demo's pinned contrib versions. The recipe path is relative to Drupal's `web/` root, as expected by Drush. Supply the site's actual HTTPS URL so OAuth metadata uses the correct hostname. After applying, check `https://YOUR-DRUPAL-HOST/.well-known/oauth-authorization-server`; its `registration_endpoint` should use that hostname. If it retains localhost or an old hostname, clear the saved override and rebuild caches:
-
-```sh
-vendor/bin/drush config:delete simple_oauth_server_metadata.settings registration_endpoint -y
-vendor/bin/drush cr
-```
-
-Agent Access adds the `tool_api__entity_list` and `tool_api__entity_metadata` starter tools and the `drupal:mcp:connect` / `drupal:content:read` scopes. It does not supply MCP Apps support, signing keys, demo content, or hero-editing permissions. Continue with the enable/seed and OAuth steps below; request `mcp_apps_demo` for the hero workflow. The recipe's read scopes coexist with the demo scope and do not replace it. No changes to the Agent Access recipe are required; the three contrib patches remain declared by this module.
-
-### Enable the demo
+### 3. Enable and seed the demo
 
 Then enable the module and create the samples:
 
@@ -104,19 +66,9 @@ vendor/bin/drush config:set system.theme default olivero -y
 
 The app and full demo article pages share the article CSS and Drupal's `mcp_apps_hero` image style: a centred 1100 × 500 crop. Other content types retain their normal presentation.
 
-### 4. Configure OAuth signing keys
+### 4. Connect with the demo's editing scope
 
-Create keys outside the document root and configure Simple OAuth to use them:
-
-```sh
-mkdir -m 700 oauth-keys
-vendor/bin/drush simple-oauth:generate-keys "$PWD/oauth-keys"
-vendor/bin/drush config:set simple_oauth.settings public_key "$PWD/oauth-keys/public.key" -y
-vendor/bin/drush config:set simple_oauth.settings private_key "$PWD/oauth-keys/private.key" -y
-vendor/bin/drush cr
-```
-
-The PHP/web-server user must be able to read the keys. Keep private keys out of version control. Existing sites with working OAuth keys should retain their configuration.
+Keep the working signing keys and OAuth configuration established through Agent Access. For shared connection setup and troubleshooting, use the [Agent Access documentation](https://www.drupal.org/project/agent_access).
 
 Connect your MCP Apps host to:
 
@@ -124,7 +76,7 @@ Connect your MCP Apps host to:
 https://YOUR-DRUPAL-HOST/mcp
 ```
 
-Choose OAuth authentication and sign in with the site administrator for the first demonstration. Request the `mcp_apps_demo` scope; the protected-resource metadata advertises it. If your host has an explicit scope field, enter that value. The enabled modules expose OAuth discovery and dynamic client registration; your host can register its OAuth client. Hosts without dynamic registration require a client configured under **Configuration → Web services → Consumers**, with the host's actual redirect URI and Authorization Code grant and `mcp_apps_demo` as its default Authorization Code scope.
+Choose OAuth authentication and sign in with the site administrator for the first demonstration. The Agent Access read scopes do not grant hero-editing access. Request the additional `mcp_apps_demo` scope; the protected-resource metadata advertises it. If your host has an explicit scope field, enter that value. The enabled modules expose OAuth discovery and dynamic client registration; your host can register its OAuth client. Hosts without dynamic registration require a client configured under **Configuration → Web services → Consumers**, with the host's actual redirect URI and Authorization Code grant and `mcp_apps_demo` as its default Authorization Code scope.
 
 For a non-administrator demo account, assign **MCP Apps demo editor** under **People**. For a more limited role, grant the permissions below and configure an OAuth scope carrying that role under `/admin/config/people/simple_oauth/oauth2_scope/dynamic`. Authorization Code login also requires **Grant OAuth2 codes**. Module permissions and Drupal content access still apply independently of OAuth. This demonstration verifies OAuth authentication and Drupal permissions; it does not claim per-tool OAuth scope enforcement by the companion alpha release.
 
