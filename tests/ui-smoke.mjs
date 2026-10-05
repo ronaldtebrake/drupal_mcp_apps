@@ -30,21 +30,14 @@ async function setup(demo) {
           reply({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: fixture });
         } else if (request.method === 'tools/call') {
           const result = structuredClone(fixture);
-          if (demo === 'media-picker') {
-            if (request.params.name === 'media_picker_save_hero') {
-              const args = request.params.arguments;
-              const post = fixture.structuredContent.posts.find((item) => item.id === args.node_id);
-              result.structuredContent = { app: 'media-picker-hero-saved', post: { ...post, hero: { id: args.media_id, name: 'New hero' }, alt: args.alt, revision: 'new-revision' }, message: 'Hero saved as a new revision.' };
-              reply({ jsonrpc: '2.0', id: request.id, result }); return;
-            }
-            result.structuredContent.query = request.params.arguments.query;
-            result.structuredContent.media = fixture.structuredContent.media.filter((item) => item.name.toLowerCase().includes(request.params.arguments.query.toLowerCase()));
-          } else {
+          if (request.params.name === 'media_picker_save_hero') {
             const args = request.params.arguments;
-            result.structuredContent.filters = args;
-            result.structuredContent.labels = result.structuredContent.labels.slice(-args.months);
-            result.structuredContent.series.forEach((series) => { series.values = series.values.slice(-args.months); });
+            const post = fixture.structuredContent.posts.find((item) => item.id === args.node_id);
+            result.structuredContent = { app: 'media-picker-hero-saved', post: { ...post, hero: { id: args.media_id, name: 'New hero' }, alt: args.alt, revision: 'new-revision' }, message: 'Hero saved as a new revision.' };
+            reply({ jsonrpc: '2.0', id: request.id, result }); return;
           }
+          result.structuredContent.query = request.params.arguments.query;
+          result.structuredContent.media = fixture.structuredContent.media.filter((item) => item.name.toLowerCase().includes(request.params.arguments.query.toLowerCase()));
           reply({ jsonrpc: '2.0', id: request.id, result });
         } else if (request.id !== undefined) {
           reply({ jsonrpc: '2.0', id: request.id, result: {} });
@@ -99,51 +92,17 @@ try {
   console.log('PASS: Media SDK handshake, inline images, article preview, current/proposed toggle, review before save and server search.');
 } finally { media.dom.window.close(); }
 
-const chart = await setup('views-chart');
+const data = structuredClone(media.fixture.structuredContent);
+data.media[0].name = '<img src=x onerror=alert(1)>';
+data.media[0].thumbnail = 'javascript:alert(1)';
+const dom = new JSDOM(media.html, { url: data.origin, runScripts: 'dangerously', beforeParse(w) { w.__DEMO_PREVIEW__ = data; w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder; } });
 try {
-  const { dom, document: doc, fixture, requests, errors } = chart;
-  const total = fixture.structuredContent.series.reduce((sum, series) => sum + series.values.reduce((a, b) => a + b, 0), 0);
-  assert.equal(doc.querySelector('#total').textContent, String(total));
-  assert.equal(doc.querySelectorAll('#chart polyline').length, 3);
-  doc.querySelector('#bar-mode').click();
-  assert.equal(doc.querySelector('#bar-mode').getAttribute('aria-pressed'), 'true');
-  assert.equal(doc.querySelectorAll('#chart polyline').length, 0);
-  assert.equal(doc.querySelectorAll('#chart rect').length, 36);
-  const series = fixture.structuredContent.series[0];
-  doc.querySelector(`#legend [data-series="${series.id}"]`).click();
-  assert.equal(doc.querySelector('#total').textContent, String(total - series.values.reduce((a, b) => a + b, 0)));
-  assert.equal(doc.querySelectorAll('#chart rect').length, 24);
-  doc.querySelector('#month-buttons button').click();
-  assert.equal(doc.querySelector('#insight-title').textContent, fixture.structuredContent.labels[0]);
-  assert.equal(doc.querySelectorAll('tbody tr').length, 12);
-  doc.querySelector('#share-chart').click();
-  await waitFor(() => requests.some((request) => request.method === 'ui/message'), 'chart chat handoff');
-  assert(!requests.find((request) => request.method === 'ui/message').params.content[0].text.includes(`"id":"${series.id}"`), 'Chart handoff contains visible series only.');
-  doc.querySelector('#months').value = '3';
-  doc.querySelector('#author').value = '1';
-  doc.querySelector('#filter-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
-  await waitFor(() => doc.querySelectorAll('tbody tr').length === 3, 'server filter result');
-  await waitFor(() => !doc.querySelector('#apply-filters').disabled, 'server filter completion');
-  const refresh = requests.find((request) => request.method === 'tools/call');
-  assert.deepEqual(JSON.parse(JSON.stringify(refresh.params.arguments)), { months: 3, scope: 'demo', author: 1 });
-  assert.equal(doc.querySelector('#apply-filters').disabled, false);
-  assert.equal(errors.length, 0, errors.map((error) => error.message).join('\n'));
-  console.log('PASS: Views SDK handshake, chart modes, series toggle, month exploration, accessible table, chat handoff and server filters.');
-} finally { chart.dom.window.close(); }
-
-for (const [demo, source] of [['media-picker', media], ['views-chart', chart]]) {
-  const data = structuredClone(source.fixture.structuredContent);
-  if (demo === 'media-picker') { data.media[0].name = '<img src=x onerror=alert(1)>'; data.media[0].thumbnail = 'javascript:alert(1)'; }
-  const dom = new JSDOM(source.html, { url: data.origin, runScripts: 'dangerously', beforeParse(w) { w.__DEMO_PREVIEW__ = data; w.TextEncoder = TextEncoder; w.TextDecoder = TextDecoder; } });
-  try {
-    const doc = dom.window.document;
-    assert.equal(doc.querySelector('#preview-note').hidden, false);
-    if (demo === 'media-picker') {
-      assert.equal(doc.querySelector('.card-copy strong').textContent, data.media[0].name);
-      assert.equal(doc.querySelector('.card-copy strong img'), null);
-      assert.equal(doc.querySelector('.media-card').querySelector('img'), null);
-      doc.querySelector('.media-card').click(); assert.equal(doc.querySelector('#use-media').disabled, true);
-    } else { assert.equal(doc.querySelector('#apply-filters').disabled, true); assert.equal(doc.querySelector('#share-chart').disabled, true); }
-    console.log(`PASS: ${demo} browser preview stays read-only; untrusted content cannot inject markup or unsafe URLs.`);
-  } finally { dom.window.close(); }
-}
+  const doc = dom.window.document;
+  assert.equal(doc.querySelector('#preview-note').hidden, false);
+  assert.equal(doc.querySelector('.card-copy strong').textContent, data.media[0].name);
+  assert.equal(doc.querySelector('.card-copy strong img'), null);
+  assert.equal(doc.querySelector('.media-card').querySelector('img'), null);
+  doc.querySelector('.media-card').click();
+  assert.equal(doc.querySelector('#use-media').disabled, true);
+  console.log('PASS: Media picker browser preview stays read-only; untrusted content cannot inject markup or unsafe URLs.');
+} finally { dom.window.close(); }

@@ -13,7 +13,7 @@ use Mcp\Schema\Extension\Apps\UiResourceCsp;
 use Mcp\Schema\Result\CallToolResult;
 
 /**
- * Shared SDK result and resource helpers for the two small demos.
+ * SDK result and resource helpers for the Media picker app.
  */
 final class DemoSupport {
 
@@ -56,7 +56,7 @@ final class DemoSupport {
     $path = \Drupal::service('extension.list.module')->getPath('mcp_apps') . '/dist/' . $demo . '.html';
     $html = file_get_contents($path);
     if ($html === FALSE) {
-      throw new \RuntimeException('Build the MCP Apps demos first.');
+      throw new \RuntimeException('Build the MCP App first.');
     }
     return new TextResourceContents('ui://drupal/' . $demo, McpApps::MIME_TYPE, $html, [
       'ui' => new UiResourceContentMeta(

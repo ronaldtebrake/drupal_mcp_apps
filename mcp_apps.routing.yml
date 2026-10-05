@@ -5,4 +5,4 @@ mcp_apps.preview:
     _title: 'MCP Apps demos'
   requirements:
     _permission: 'access administration pages'
-    demo: 'media-picker|views-chart'
+    demo: 'media-picker'

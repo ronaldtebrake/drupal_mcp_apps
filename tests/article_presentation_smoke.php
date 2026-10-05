@@ -12,6 +12,8 @@ use Drupal\mcp_apps\Mcp\HeroWorkflow;
 use Drupal\mcp_apps\Mcp\MediaPicker;
 use Drupal\image\Entity\ImageStyle;
 use Drupal\user\Entity\User;
+use Drupal\node\Entity\Node;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
 
 $check = static function (bool $value, string $message): void {
   if (!$value) {
@@ -44,11 +46,12 @@ try {
   $inline = $result->meta['drupal/media-picker']['heroThumbnails'][$post['hero']['id']];
   $bytes = base64_decode(explode(',', $inline, 2)[1], TRUE);
   $check($bytes === file_get_contents($uri), 'App and website use byte-identical Drupal hero derivatives');
-  $sample_id = array_key_first(\Drupal::state()->get('mcp_apps.demo_data')['nodes']);
-  $other = \Drupal::entityTypeManager()->getStorage('node')->load($sample_id);
-  $other_view = \Drupal::entityTypeManager()->getViewBuilder('node')->view($other, 'full');
-  $other_html = (string) \Drupal::service('renderer')->renderRoot($other_view);
-  $check(!str_contains($other_html, 'mcp-article-page'), 'Other content types retain their existing presentation');
+  $other = Node::create(['type' => 'unrelated', 'title' => 'Unrelated article']);
+  $other_display = EntityViewDisplay::create(['targetEntityType' => 'node', 'bundle' => 'unrelated', 'mode' => 'full']);
+  $other_view = ['#theme' => 'node', '#view_mode' => 'full', 'body' => ['#markup' => 'Existing presentation']];
+  $original_view = $other_view;
+  mcp_apps_entity_view_alter($other_view, $other, $other_display);
+  $check($other_view === $original_view, 'Other content types retain their existing presentation');
 }
 finally {
   \Drupal::currentUser()->setAccount($account);

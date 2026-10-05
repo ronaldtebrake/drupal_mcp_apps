@@ -25,7 +25,7 @@ export function host(demo, title, receive) {
   };
   bridge.call = async (args) => {
     if (!bridge.connected) throw new Error('Open this demo through its MCP tool to use server filters.');
-    const result = await app.callServerTool({ name: demo === 'media-picker' ? 'media_picker_open' : 'views_chart_open', arguments: args });
+    const result = await app.callServerTool({ name: 'media_picker_open', arguments: args });
     if (result.isError) throw new Error(result.content?.find((item) => item.type === 'text')?.text || 'Drupal could not load the data.');
     receive(result);
   };

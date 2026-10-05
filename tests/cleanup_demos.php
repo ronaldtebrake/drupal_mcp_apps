@@ -11,18 +11,11 @@ use Drupal\file\Entity\File;
 use Drupal\media\Entity\Media;
 use Drupal\mcp_apps\Mcp\HeroWorkflow;
 use Drupal\node\Entity\Node;
-use Drupal\user\Entity\User;
 
 $registry = \Drupal::state()->get('mcp_apps.demo_data', []);
 foreach ($registry['posts'] ?? [] as $id => $item) {
   $node = Node::load($id);
   if ($node !== NULL && $node->uuid() === $item['uuid'] && $node->bundle() === HeroWorkflow::BUNDLE) {
-    $node->delete();
-  }
-}
-foreach ($registry['nodes'] ?? [] as $id => $item) {
-  $node = Node::load($id);
-  if ($node !== NULL && $node->uuid() === $item['uuid'] && str_starts_with($node->bundle(), 'mcp_demo_')) {
     $node->delete();
   }
 }
@@ -75,14 +68,8 @@ foreach ($registry['config'] ?? [] as $name => $uuid) {
   }
   $entity->delete();
 }
-foreach ($registry['users'] ?? [] as $id => $uuid) {
-  $user = User::load($id);
-  if ($user !== NULL && $user->uuid() === $uuid && !\Drupal::entityQuery('node')->accessCheck(FALSE)->condition('uid', $id)->count()->execute()) {
-    $user->delete();
-  }
-}
 // Preserve tracking for protected data that can be cleaned up later.
-foreach (['nodes' => 'node', 'posts' => 'node', 'media' => 'media', 'files' => 'file', 'users' => 'user'] as $key => $entity_type) {
+foreach (['posts' => 'node', 'media' => 'media', 'files' => 'file'] as $key => $entity_type) {
   foreach ($registry[$key] ?? [] as $id => $item) {
     $entity = \Drupal::entityTypeManager()->getStorage($entity_type)->load($id);
     $uuid = is_array($item) ? $item['uuid'] : $item;

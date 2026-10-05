@@ -6,7 +6,6 @@ namespace Drupal\mcp_apps\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\mcp_apps\Mcp\MediaPicker;
-use Drupal\mcp_apps\Mcp\ViewsChart;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -20,7 +19,6 @@ final class DemoPreviewController extends ControllerBase {
   public function preview(string $demo): Response {
     $result = match ($demo) {
       'media-picker' => (new MediaPicker())->open(),
-      'views-chart' => (new ViewsChart())->open(),
       default => throw new \InvalidArgumentException('Unknown demo.'),
     };
     if ($result->isError) {

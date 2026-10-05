@@ -1,6 +1,6 @@
 name: MCP Apps
 type: module
-description: 'Two MCP Apps demos: a Drupal Media picker and an interactive Views chart.'
+description: 'A Drupal Media picker MCP App with an article hero-image workflow.'
 package: MCP
 core_version_requirement: ^11
 dependencies:
@@ -8,4 +8,3 @@ dependencies:
   - drupal:node
   - drupal:media
   - drupal:image
-  - drupal:views

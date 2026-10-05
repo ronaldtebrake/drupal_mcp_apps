@@ -1,4 +1,4 @@
-"""Exercise both demos through the real Drupal SDK MCP transport."""
+"""Exercise the Media picker through the real Drupal SDK MCP transport."""
 
 import json
 import select
@@ -60,7 +60,7 @@ try:
     assert "canvas_composer_open" not in tools
     assert tools['media_picker_save_hero']['_meta']['ui']['visibility'] == ['app']
     assert tools['media_picker_save_hero']['annotations']['readOnlyHint'] is False
-    for name, demo in [("media_picker_open", "media-picker"), ("views_chart_open", "views-chart")]:
+    for name, demo in [("media_picker_open", "media-picker")]:
         uri = "ui://drupal/" + demo
         assert tools[name]["_meta"]["ui"]["resourceUri"] == uri
         assert tools[name]["annotations"]["readOnlyHint"] is True
@@ -77,10 +77,6 @@ try:
             assert len(thumbnails) == len(data["media"])
             assert all(value.startswith("data:image/") for value in thumbnails.values())
             assert "thumbnails" not in data, "Image bytes are presentation metadata, not model data."
-        else:
-            assert len(data["labels"]) == 12
-            assert len(data["series"]) == 3
-            assert sum(sum(series["values"]) for series in data["series"]) > 0
         content = request("resources/read", {"uri": uri})["contents"][0]
         assert content["mimeType"] == "text/html;profile=mcp-app"
         assert 'id="app-script"' in content["text"]
@@ -96,13 +92,12 @@ try:
     article = request('tools/call', {'name': 'media_picker_open', 'arguments': {'article_title': 'weekend of discovery', 'query': 'Conference'}})
     assert article['structuredContent']['node_id'] > 0
     assert article['structuredContent']['hero_media'], 'Current hero survives a filtered library search.'
-    invalid = request("tools/call", {"name": "views_chart_open", "arguments": {"months": 99}})
+    invalid = request("tools/call", {"name": "media_picker_open", "arguments": {"node_id": -1}})
     assert invalid["isError"] is True
-    subset = request("tools/call", {"name": "views_chart_open", "arguments": {"months": 3, "author": 1}})
-    assert not subset.get("isError"), subset
-    assert len(subset["structuredContent"]["labels"]) == 3
-    assert subset["structuredContent"]["filters"]["author"] == 1
-    print("PASS: media search, View exposed author filter, period filter and invalid input handling.")
+    resources = request("resources/list", {})
+    assert [item['uri'] for item in resources['resources'] if item['uri'].startswith('ui://drupal/')] == ['ui://drupal/media-picker']
+    assert {name for name, tool in tools.items() if tool.get('_meta', {}).get('ui', {}).get('resourceUri', '').startswith('ui://drupal/')} == {'media_picker_open', 'media_picker_save_hero'}
+    print("PASS: media search, article lookup, invalid input and the media-only app catalogue.")
     print("Factory Apps advertisement:", initialization["capabilities"].get("extensions", "absent: documented upstream gap"))
 finally:
     process.terminate()

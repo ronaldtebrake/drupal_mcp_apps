@@ -4,7 +4,7 @@
 
 Contrib and custom modules should be able to expose independent MCP Apps through mcp_server, without replacing the server factory or implementing protocol handling.
 
-Two working proof-of-concept apps use the installed mcp/sdk 0.7.1 attribute discovery path: a Drupal Media picker and a Drupal Views chart. Both pass real stdio protocol tests for tools/list metadata, tools/call structuredContent, and resources/read HTML/MIME/CSP metadata. Both tools also execute through the existing chat connection. This demonstrates SDK support, but does not demonstrate equivalent support through Drupal-native plugin definitions.
+A working Media picker proof of concept uses the installed mcp/sdk 0.7.1 attribute discovery path. It passes real stdio protocol tests for tools/list metadata, tools/call structuredContent, and resources/read HTML/MIME/CSP metadata. The Media picker also executes through the existing chat connection. This demonstrates SDK support, but does not demonstrate equivalent support through Drupal-native plugin definitions.
 
 ## Verified current behavior
 
@@ -45,6 +45,6 @@ ddev exec python3 web/modules/custom/mcp_apps/tests/protocol_smoke.py
 ddev drush php:script web/modules/custom/mcp_apps/tests/server_support_audit.php
 ```
 
-The first test exercises two real SDK-discovered apps over MCP. The second tests native authoring surfaces and Drupal resource-content handling. Full native plugin registration tests for two separate modules remain acceptance work for the proposed change; the current tests do not claim that coverage.
+The first test exercises the Media picker over the real SDK MCP transport. The second tests native authoring surfaces and Drupal resource-content handling. Full native plugin registration tests for two separate modules remain acceptance work for the proposed change; the current tests do not claim that coverage.
 
 The companion Tool API bridge already preserves structuredContent. A related issue should agree where app presentation metadata belongs and preserve it through Tool API definitions, MCP config derivatives, and mcp_server ToolDefinition. The current demo deliberately does not imply that these SDK-discovered tools are Tool API plugins.
