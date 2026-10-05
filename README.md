@@ -60,6 +60,29 @@ vendor/bin/drush site:install standard \
   --account-name=admin --site-name="MCP Apps demo" -y
 ```
 
+### Optional: use Agent Access as the site foundation
+
+For an installed Drupal **11.4+** site, [Agent Access](https://www.drupal.org/project/agent_access) provides the shared MCP/OAuth setup and starter content-reading tools. This is the recommended foundation when you also want to explore ordinary Drupal tools alongside the MCP App. The direct module installation above remains supported.
+
+After installing this module and applying its patches, run from the site root:
+
+```sh
+composer require drupal/agent_access:1.0.0-alpha2 --no-interaction
+vendor/bin/drush cr
+vendor/bin/drush recipe ../recipes/agent_access --uri=https://YOUR-DRUPAL-HOST -y
+```
+
+The explicit recipe version was tested with this demo's pinned contrib versions. The recipe path is relative to Drupal's `web/` root, as expected by Drush. Supply the site's actual HTTPS URL so OAuth metadata uses the correct hostname. After applying, check `https://YOUR-DRUPAL-HOST/.well-known/oauth-authorization-server`; its `registration_endpoint` should use that hostname. If it retains localhost or an old hostname, clear the saved override and rebuild caches:
+
+```sh
+vendor/bin/drush config:delete simple_oauth_server_metadata.settings registration_endpoint -y
+vendor/bin/drush cr
+```
+
+Agent Access adds the `tool_api__entity_list` and `tool_api__entity_metadata` starter tools and the `drupal:mcp:connect` / `drupal:content:read` scopes. It does not supply MCP Apps support, signing keys, demo content, or hero-editing permissions. Continue with the enable/seed and OAuth steps below; request `mcp_apps_demo` for the hero workflow. The recipe's read scopes coexist with the demo scope and do not replace it. No changes to the Agent Access recipe are required; the three contrib patches remain declared by this module.
+
+### Enable the demo
+
 Then enable the module and create the samples:
 
 ```sh
