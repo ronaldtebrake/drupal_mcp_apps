@@ -20,3 +20,6 @@
 .hero-workflow .placeholder{min-height:180px;padding:16px;font-size:12px}
 .hero-workflow .placeholder-symbol{font-size:24px;margin-bottom:6px}
 .hero-workflow .footer{margin-top:16px;padding-top:10px}
+
+.hero-workflow .hero{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
+.hero-workflow .hero h1{margin:0}
