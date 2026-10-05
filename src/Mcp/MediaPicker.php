@@ -34,6 +34,7 @@ final class MediaPicker {
   )]
   public function open(#[Schema(maxLength: 200)] string $query = '', int $node_id = 0, #[Schema(maxLength: 200)] string $article_title = ''): CallToolResult {
     return DemoSupport::respond(function () use ($query, $node_id, $article_title): array {
+      PickerAccess::requireAccess();
       if ($node_id < 0 || mb_strlen($query) > 200 || mb_strlen($article_title) > 200) {
         throw new \InvalidArgumentException('Search must be at most 200 characters.');
       }
@@ -165,6 +166,7 @@ final class MediaPicker {
    */
   #[McpResource(uri: self::URI, name: 'drupal-media-picker', title: 'Drupal Media Picker', mimeType: McpApps::MIME_TYPE, meta: ['ui' => new \stdClass()])]
   public function resource(): TextResourceContents {
+    PickerAccess::requireAccess();
     $resource = DemoSupport::resource('media-picker');
     // Also bundle thumbnails in the resource for hosts that omit result _meta.
     // The same current-account entity/file access checks apply here.

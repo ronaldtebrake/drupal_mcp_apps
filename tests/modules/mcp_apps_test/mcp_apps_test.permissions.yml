@@ -1,0 +1,2 @@
+deny test hero field edit:
+  title: 'Deny hero field editing for access tests'

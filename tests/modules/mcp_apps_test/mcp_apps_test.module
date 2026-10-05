@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Simulates a site's field access restrictions.
+ */
+
+declare(strict_types=1);
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\mcp_apps\Mcp\HeroWorkflow;
+
+/**
+ * Implements hook_entity_field_access().
+ */
+function mcp_apps_test_entity_field_access(string $operation, FieldDefinitionInterface $field_definition, AccountInterface $account): AccessResult {
+  return AccessResult::forbiddenIf($operation === 'edit' && $field_definition->getName() === HeroWorkflow::ALT_FIELD && $account->hasPermission('deny test hero field edit'))->cachePerPermissions();
+}

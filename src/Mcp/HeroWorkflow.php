@@ -24,6 +24,7 @@ final class HeroWorkflow {
    * Lists viewable demo posts with their current hero and update capability.
    */
   public function posts(): array {
+    PickerAccess::requireAccess();
     $storage = \Drupal::entityTypeManager()->getStorage('node');
     $ids = $storage->getQuery()->accessCheck(TRUE)->condition('type', self::BUNDLE)->sort('changed', 'DESC')->range(0, 20)->execute();
     $posts = [];
@@ -47,6 +48,7 @@ final class HeroWorkflow {
   )]
   public function save(int $node_id, int $media_id, string $alt, string $revision): CallToolResult {
     return DemoSupport::respond(function () use ($node_id, $media_id, $alt, $revision): array {
+      PickerAccess::requireAccess(TRUE);
       if ($node_id < 1 || $media_id < 1 || trim($alt) === '' || mb_strlen($alt) > 500) {
         throw new \InvalidArgumentException('Choose a post and image, and provide alt text of 1–500 characters.');
       }
@@ -160,7 +162,7 @@ final class HeroWorkflow {
    * Guards the workflow boundary and Drupal entity/field permissions.
    */
   private function editable(NodeInterface $node): bool {
-    if ($node->bundle() !== self::BUNDLE || $node->isPublished() || !$node->access('view') || !$node->access('update')) {
+    if (!PickerAccess::allowed(TRUE) || $node->bundle() !== self::BUNDLE || $node->isPublished() || !$node->access('view') || !$node->access('update')) {
       return FALSE;
     }
     foreach ([self::MEDIA_FIELD, self::ALT_FIELD] as $name) {

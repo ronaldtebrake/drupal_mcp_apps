@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\mcp_apps\Mcp;
 
 use Drupal\Core\Utility\FiberResumeType;
+use Drupal\mcp_server\Exception\McpAuthorizationDeniedException;
 use Mcp\Schema\Content\TextContent;
 use Mcp\Schema\Content\TextResourceContents;
 use Mcp\Schema\Extension\Apps\McpApps;
@@ -44,7 +45,7 @@ final class DemoSupport {
         new TextContent(json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)),
       ], structuredContent: $data, meta: $meta);
     }
-    catch (\InvalidArgumentException $exception) {
+    catch (\InvalidArgumentException | McpAuthorizationDeniedException $exception) {
       return CallToolResult::error([new TextContent($exception->getMessage())]);
     }
   }

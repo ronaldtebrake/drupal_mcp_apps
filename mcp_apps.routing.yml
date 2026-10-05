@@ -2,7 +2,7 @@ mcp_apps.preview:
   path: '/admin/content/mcp-apps/{demo}'
   defaults:
     _controller: '\Drupal\mcp_apps\Controller\DemoPreviewController::preview'
-    _title: 'MCP Apps demos'
+    _title: 'MCP Media picker'
   requirements:
-    _permission: 'access administration pages'
+    _permission: 'access mcp media picker'
     demo: 'media-picker'

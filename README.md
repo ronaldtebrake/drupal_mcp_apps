@@ -64,9 +64,19 @@ The seed script creates six Media entities and public files and two article draf
 
 Run `tests/cleanup_demos.php` through `ddev drush php:script` to remove tracked sample data. Node-referenced media, files with usage, and bundles with additional content are retained.
 
+## Permissions
+
+Assign permissions under **People → Permissions** after enabling the module:
+
+- **Use the MCP Media picker** (`access mcp media picker`) allows the tool, HTML resource, and browser preview.
+- **Update article heroes through MCP** (`update mcp article hero`) additionally allows saving. Both permissions are required for saves.
+
+These permissions do not grant access to content. Drupal node view/update, Media/file view, and field view/edit access still apply. Anonymous and authenticated accounts without the picker permission are denied before content is loaded. A picker-only user can browse accessible content but cannot save. As usual, Drupal's superuser bypass applies. No role permissions are granted automatically. Access to the MCP endpoint is separately managed by MCP Server.
+
 ## Verification
 
 ```sh
+ddev exec vendor/bin/phpunit web/modules/custom/mcp_apps/tests/src
 ddev drush php:script web/modules/custom/mcp_apps/tests/backend_smoke.php
 ddev drush php:script web/modules/custom/mcp_apps/tests/hero_smoke.php
 ddev drush php:script web/modules/custom/mcp_apps/tests/article_presentation_smoke.php
@@ -75,7 +85,9 @@ ddev exec node web/modules/custom/mcp_apps/tests/ui-smoke.mjs
 ddev exec vendor/bin/phpcs --standard=Drupal,DrupalPractice web/modules/custom/mcp_apps/src web/modules/custom/mcp_apps/tests/seed_demos.php web/modules/custom/mcp_apps/tests/cleanup_demos.php web/modules/custom/mcp_apps/tests/backend_smoke.php
 ```
 
-The protocol test calls the real MCP transport and writes fixtures under `/tmp` inside DDEV. UI tests use those fixtures with a simulated host and the actual bundled SDK. Backend tests verify search and anonymous access restrictions; a sample Media status change is restored in a finally block.
+The Drupal functional test installs an isolated site and checks anonymous and authenticated permission denials, read-only access, node and field restrictions, inaccessible Media, valid saves, stale/published draft rejection, unchanged content after denied writes, and preview HTTP 403/200 responses. It also runs the real MCP Server factory and SDK transport to verify authorized/denied tool calls and HTML resource reads. It uses ordinary users rather than uid 1. PHPUnit requires Drupal core-dev and the standard Drupal test database/base URL configuration (already configured in this DDEV sandbox).
+
+The protocol test calls the real MCP transport and writes fixtures under `/tmp` inside DDEV. UI tests use those fixtures with a simulated host and the actual bundled SDK. Backend smoke checks verify search and anonymous access restrictions; the hero smoke check uses a disposable article. Permission and Media access coverage runs on the isolated PHPUnit site.
 
 Authenticated browser previews use the same UI and current-account data:
 

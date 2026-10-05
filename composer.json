@@ -1,0 +1,12 @@
+{
+  "name": "drupal/mcp_apps",
+  "description": "Drupal Media picker and article hero workflow using MCP Apps.",
+  "type": "drupal-module",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.3",
+    "drupal/core": "^11",
+    "drupal/mcp_server": "^2.0@beta",
+    "mcp/sdk": "^0.7.1"
+  }
+}

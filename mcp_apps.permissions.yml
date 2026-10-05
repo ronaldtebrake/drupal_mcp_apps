@@ -1,0 +1,7 @@
+access mcp media picker:
+  title: 'Use the MCP Media picker'
+  description: 'Search accessible image Media and open the MCP App and browser preview.'
+update mcp article hero:
+  title: 'Update article heroes through MCP'
+  description: 'Save hero revisions of accessible, editable demo drafts. Also requires Use the MCP Media picker.'
+  restrict access: true
