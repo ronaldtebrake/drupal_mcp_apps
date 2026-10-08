@@ -17,6 +17,7 @@
   },
   "suggest": {
     "drupal/mercury": "Mercury starterkit for the optional component showcase theme.",
+    "drupal/byte_theme": "Optional Byte component comparison alongside the Mercury showcase.",
     "drupal/canvas": "Required by Mercury's existing image component and schemas; no Canvas authoring is used.",
     "drupal/cva": "Required by the Mercury showcase templates."
   },

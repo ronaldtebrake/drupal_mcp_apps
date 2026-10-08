@@ -1,0 +1,6 @@
+name: Activity test theme
+type: theme
+base theme: false
+core_version_requirement: ^11.4
+libraries:
+  - mcp_apps_activity_test_theme/global

@@ -1,0 +1,35 @@
+name: 'Metric card'
+description: 'A summary metric with an optional native Chart.js sparkline.'
+status: experimental
+props:
+  type: object
+  required:
+    - label
+    - value
+    - note
+    - trend
+    - tone
+  properties:
+    label:
+      type: string
+    value:
+      type: string
+    note:
+      type: string
+    trend:
+      type: array
+      maxItems: 30
+      items:
+        type: integer
+        minimum: 0
+    tone:
+      type: string
+      enum:
+        - mint
+        - violet
+        - blue
+        - amber
+libraryOverrides:
+  dependencies:
+    - mcp_apps_activity_demo/design
+    - mcp_apps_activity_demo/charts

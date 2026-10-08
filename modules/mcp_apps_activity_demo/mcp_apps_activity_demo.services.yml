@@ -1,0 +1,7 @@
+services:
+  mcp_apps_activity_demo.data:
+    class: Drupal\mcp_apps_activity_demo\ActivityData
+    arguments: ['@extension.list.module']
+  mcp_apps_activity_demo.dashboard:
+    class: Drupal\mcp_apps_activity_demo\Dashboard
+    arguments: ['@plugin.manager.tool', '@mcp_apps_openui.composer', '@mcp_apps_openui.sessions', '@config.factory', '@extension.list.theme']

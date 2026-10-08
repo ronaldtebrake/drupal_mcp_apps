@@ -1,0 +1,1 @@
+<article class="pulse-metric pulse-tone-{{ tone }}"><span class="pulse-metric-label">{{ label }}</span><strong>{{ value }}</strong><small>{{ note }}</small>{% if trend %}<div class="pulse-spark"><canvas data-pulse-spark="{{ trend|json_encode|escape('html_attr') }}" role="img" aria-label="{{ label }} trend"></canvas></div>{% endif %}</article>

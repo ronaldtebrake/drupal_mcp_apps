@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { makeLibrary, parseComposition, toProgram, updateProp } from '../modules/mcp_apps_openui/ui/library.js';
+import { makeLibrary, parseComposition, toProgram, updateProp, flatten } from '../modules/mcp_apps_openui/ui/library.js';
 import { serializeCalls } from '../ui/host.js';
 
 const order = [];
@@ -16,7 +16,7 @@ assert.deepEqual(order, ['first', 'denied', 'last']);
 assert.equal(calls[1].status, 'rejected');
 assert.equal(calls[2].value, 'last', 'A rejected call must not block later calls.');
 
-const fixture = JSON.parse(await readFile('/tmp/mcp-composer-fixture.json', 'utf8'));
+const fixture = JSON.parse(await readFile(process.env.MCP_APPS_UI_FIXTURE || '/tmp/mcp-composer-fixture.json', 'utf8'));
 const library = makeLibrary(() => null);
 const source = toProgram(fixture.boot.ui.tree, library);
 assert.equal(toProgram(parseComposition(source, library), library), source);
@@ -74,7 +74,7 @@ try {
   assert.equal(frame.getAttribute('sandbox'), 'allow-scripts');
   assert(frame.getAttribute('srcdoc').includes('data:text/css;base64,'));
   assert(frame.getAttribute('srcdoc').includes('data:image/jpeg;base64,'));
-  assert.equal(document.querySelectorAll('.component-row').length, 14);
+  assert.equal(document.querySelectorAll('.component-row').length, flatten(fixture.boot.ui.tree).length);
   assert(requests.some((request) => request.method === 'ui/initialize'));
   assert(requests.some((request) => request.method === 'ui/update-model-context'));
   [...document.querySelectorAll('button')].find((button) => button.textContent === 'Mobile').click();

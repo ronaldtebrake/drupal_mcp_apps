@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Registers the optional activity resource provider.
+ */
+
+/**
+ * {@inheritdoc}
+ */
+function mcp_apps_activity_demo_install(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  $plugins['mcp_apps_activity'] = ['id' => 'mcp_apps_activity', 'enabled' => TRUE, 'configuration' => []];
+  $config->set('plugins', $plugins)->save();
+}
+
+/**
+ * {@inheritdoc}
+ */
+function mcp_apps_activity_demo_uninstall(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  unset($plugins['mcp_apps_activity']);
+  $config->set('plugins', $plugins)->save();
+}

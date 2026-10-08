@@ -6,7 +6,7 @@ Build an interactive MCP App from components that already exist in Drupal. The o
 
 The Rotterdam showcase is **preview only**: change text, select accessible Drupal Media, inspect OpenUI source, and compare desktop/mobile widths. It creates no pages and saves no content.
 
-Tools and components remain reusable: Tool API supplies data and operations, while existing SDCs supply their schemas, Twig templates, and assets. A chart component could use data from the same tool in a Drupal page, Canvas, or an MCP App. The showcase demonstrates this rendering path; it does not implement a separate Canvas authoring workflow.
+Tools and components remain reusable: Tool API supplies data and operations, while SDCs supply their schemas, Twig templates, and assets. The optional **Editorial pulse** dashboard demonstrates both: the same data tool and chart/activity components power a Drupal page and an MCP App. Neither showcase implements a Canvas authoring workflow.
 
 ## Modules
 
@@ -15,6 +15,8 @@ Tools and components remain reusable: Tool API supplies data and operations, whi
 | `mcp_apps` | Module-owned HTML resources, SDK MIME metadata, Drupal cacheability, and a reusable JavaScript host helper |
 | `mcp_apps_openui` | Official OpenUI integration, SDC discovery/validation, native rendering, and account-bound preview sessions |
 | `mcp_apps_demo` | Optional Rotterdam composition, credited sample images, and Media selection |
+| `mcp_apps_activity_demo` | Optional editorial dashboard, fictional story/activity data, and reusable chart SDCs |
+| `mcp_apps_activity_dev` | Optional local browser test routes; not required by the MCP App |
 
 The foundation has no rendering dependency on OpenUI or Canvas. The OpenUI integration works with ordinary core SDCs without Canvas. The showcase uses a Mercury-generated theme: Mercury's existing image template and schema require Canvas and CVA. Canvas authoring, Canvas Tools, and publishing are outside this demo.
 
@@ -76,7 +78,81 @@ Theme generation requires Drupal core's starterkit dependencies: install `drupal
 
 The explicit, repeatable seed imports six image Media entities and creates a dedicated Image media type if needed. It uses UUID tracking to avoid duplicates. It does not create articles, OAuth scopes, roles, or grant permissions. Existing content and files are preserved when upgrading from the hero demo; its tools and presentation overrides are retired by the update hook (`drush updb`).
 
-## Try the demo
+### Compare Mercury and Byte components
+
+For an optional component comparison, install and enable Byte alongside the
+Mercury-generated demo theme. Tested with Byte theme **1.0.3**:
+
+```sh
+composer require drupal/byte_theme:1.0.3
+vendor/bin/drush theme:enable byte_theme
+vendor/bin/drush cr
+```
+
+This uses Byte's SDCs for isolated previews. It does not apply the full Byte
+site recipe or change the default theme. Byte's maintainers recommend the
+[complete Byte template](https://www.drupal.org/project/byte) for a complete
+website and discourage using its theme as a base theme.
+
+Ask the agent to use `mcp_apps_demo_theme` for Mercury or `byte_theme` for Byte.
+Pass the same value as `provider` to `sdc_component_catalog` and as `theme` to
+`component_composer_open`. Omitting `program` opens the same Rotterdam sample
+adapted to that theme's actual schemas. Byte uses Section's columns for the
+highlights; Mercury uses its separate Grid component. Templates and styles
+remain owned by their respective themes.
+
+For browser comparison, open `/admin/content/mcp-apps/composer?theme=byte_theme`
+and `/admin/content/mcp-apps/composer?theme=mcp_apps_demo_theme` in separate tabs.
+
+### Add the activity dashboard
+
+After enabling `mcp_apps_openui`, enable the independent activity showcase:
+
+```sh
+vendor/bin/drush en mcp_apps_activity_demo -y
+vendor/bin/drush cr
+```
+
+No extra Composer packages, theme generation, content imports, or Canvas/Media
+modules are required. Chart.js is bundled locally with its MIT notice. The
+dataset contains eight fictional Rotterdam stories, fictional editorial
+activity, and a fixed 60-day readership sample. It does not read real analytics
+or create content entities.
+
+Refresh the MCP connection, then ask:
+
+> Show the Editorial pulse dashboard for the last 30 days in the MCP App.
+
+`tool_api__activity_dashboard_open` opens the app. Its day-range and section
+filters call an app-only tool, which invokes `editorial_activity` through Tool
+API and maps the report into ordinary SDC props. The data tool is also available
+independently as `tool_api__editorial_activity`, without app metadata.
+
+Individual components also have filterable views. Ask for **Readership over
+time** or **Stories making an impact** with a period; the agent passes
+`view: readership` or `view: stories` to `activity_dashboard_open`. Period and
+section changes preserve the selected component, using the same Tool API report
+and native SDCs as the dashboard. `activity` and `metrics` are also available.
+
+Choose 7, 14, or 30 days, or **Custom period** and enter any whole number from
+1 to 30, then press **Apply**. The 60-day sample supports an equally long
+previous-period comparison for every selection. The tools accept the same open
+range; for example, ask for readership over the last 14 days.
+
+Compare the MCP App with `/admin/content/mcp-apps/activity`, a normal Drupal
+render array using the same composition, Twig templates, CSS, and Chart.js.
+The dashboard follows the site's default front-end theme, including its fonts
+and design tokens. Switch between Byte and Mercury in Appearance, then press
+Refresh in the app to compare the same components and data in either theme.
+Chart style, accessible tables, and story drilldowns work inside the native
+components without model calls.
+
+For local browser testing without an MCP host, optionally enable
+`mcp_apps_activity_dev` and open `/admin/content/mcp-apps/activity/app`.
+That module owns the browser app and CSRF-protected transport routes. Neither
+route is needed by the MCP App. See [the activity demo guide](modules/mcp_apps_activity_demo/README.md).
+
+## Try the landing-page demo
 
 Ask:
 
@@ -100,7 +176,7 @@ Preview assets are limited to installed extension assets and access-checked Medi
 
 Resources default to max-age zero. Account-specific resources must remain uncached for now: the pinned MCP Server implementation does not correctly resolve cached resource variation pointers across accounts. Preview sessions expire after one hour and are bound to the authenticated account.
 
-This first adapter supports static, JSON-compatible SDC compositions and local attached CSS, JavaScript, fonts, and images. External assets, private files, PHP-object props, and OpenUI Query/Mutation/state expressions are unsupported. It is a component preview, not a complete themed Drupal page or form renderer. The optional Media adapter recognizes Canvas's image schema; other image-prop formats need an adapter. Future data-driven widgets can reuse Tool API data, but automatic tool-to-component data binding is not implemented here.
+This first adapter supports static, JSON-compatible SDC compositions and local attached CSS, JavaScript, fonts, and images. External assets, private files, PHP-object props, and OpenUI Query/Mutation/state expressions are unsupported. It is a component preview, not a complete themed Drupal page or form renderer. The optional Media adapter recognizes Canvas's image schema; other image-prop formats need an adapter. The activity demo explicitly maps a Tool API report to component props; automatic binding of arbitrary tools to components is not implemented.
 
 ## Contrib dependencies
 
@@ -134,8 +210,27 @@ npm run test:ui
 
 The protocol smoke uses the local Drush `admin` account (`DRUPAL_USER` overrides it); this is separate from HTTP OAuth verification. The UI smoke uses the actual bundle and SDK with a simulated host and a fixture generated from native Drupal rendering. Tests cover two independent apps, permissions, account isolation, standalone SDC rendering without Canvas, nested slots, schema errors, Media/field/private-file access, asset transport, responsive controls, and last-valid-preview behavior.
 
+To run the optional Byte comparison through the same smoke tests, set
+`MCP_APPS_PREVIEW_THEME=byte_theme` for the protocol and PHP smoke scripts.
+Set `MCP_APPS_UI_FIXTURE=/tmp/mcp-composer-byte-fixture.json` when generating the
+Byte fixture and running `npm run test:ui` to retain the Mercury fixture.
+
+With `mcp_apps_activity_demo` enabled, run its independent protocol and UI smoke:
+
+```sh
+python3 web/modules/contrib/mcp_apps/tests/activity_protocol_smoke.py
+vendor/bin/drush php:script web/modules/contrib/mcp_apps/tests/activity_smoke.php
+cd web/modules/contrib/mcp_apps
+npm run test:activity
+```
+
+Its Drupal tests cover permissions, invalid filters, cross-account sessions,
+CSRF protection, and native rendering without Canvas. The UI test covers the
+official SDK handshake, filtering, sequential asset calls, errors, responsive
+widths, cancellation, and source-checked iframe sizing.
+
 ## Licenses and credits
 
-The module's code is GPL-2.0-or-later. OpenUI is MIT licensed; its full notice and bundled dependency notices are retained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Mercury supplies the showcase component templates and styles; they are generated from its starterkit rather than copied into this module.
+The module's code is GPL-2.0-or-later. OpenUI is MIT licensed; its full notice and bundled dependency notices are retained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Mercury supplies the showcase component templates and styles; they are generated from its starterkit rather than copied into this module. The optional Byte comparison uses the unmodified components and assets from the Composer-installed Byte theme, which retains its own licenses and credits.
 
 The six photographs are licensed separately under the [Unsplash License](https://unsplash.com/license). Copyright remains with **Arnout van Nieuwkoop, Alexander Psiuk, micheile henderson, Roel Oosterwijk, Ufoma Ojo, and Mitchell Leach**. The photographs were not AI generated. Preserve their individual credits and source links in [the image license file](modules/mcp_apps_demo/assets/LICENSE.md) and [manifest](modules/mcp_apps_demo/assets/manifest.json) when redistributing this demo.

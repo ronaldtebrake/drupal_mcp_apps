@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Drupal\Tests\mcp_apps\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\Core\Asset\AssetResolverInterface;
 use Drupal\Tests\user\Traits\UserCreationTrait;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -118,6 +119,29 @@ final class CompositionTest extends KernelTestBase {
         $this->assertSame('Component preview', $result->getMeta()['mcp']['ui']['title']);
         $this->assertSame([], $result->getMeta()['mcp']['ui']['tree']);
       }
+    }
+  }
+
+  /**
+   * Rejects local files outside installed extensions and approved Media.
+   */
+  public function testUnownedPreviewAssetDenied(): void {
+    $path = 'sites/mcp-apps-unattached-' . bin2hex(random_bytes(8)) . '.css';
+    file_put_contents(DRUPAL_ROOT . '/' . $path, 'body { color: red; }');
+    $resolver = $this->createMock(AssetResolverInterface::class);
+    $resolver->method('getCssAssets')->willReturn([['data' => $path]]);
+    $this->container->set('asset.resolver', $resolver);
+    $composer = $this->container->get('mcp_apps_openui.composer');
+    $opened = $composer->open('Asset access', 'stark', '');
+    $this->expectException(\InvalidArgumentException::class);
+    $this->expectExceptionMessage('Unsupported or missing preview asset:');
+    try {
+      $composer->preview($opened['data']['session_id'], [
+        ['component' => 'mcp_apps_test:text', 'props' => ['text' => 'Safe text']],
+      ]);
+    }
+    finally {
+      unlink(DRUPAL_ROOT . '/' . $path);
     }
   }
 

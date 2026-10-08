@@ -1,0 +1,7 @@
+id: activity_dashboard_open
+tool_id: activity_dashboard_open
+description: null
+status: true
+dependencies:
+  module:
+    - mcp_apps_activity_demo

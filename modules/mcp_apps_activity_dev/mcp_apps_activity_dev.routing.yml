@@ -1,0 +1,16 @@
+mcp_apps_activity_dev.app:
+  path: '/admin/content/mcp-apps/activity/app'
+  defaults:
+    _controller: '\Drupal\mcp_apps_activity_dev\Controller\ActivityPreviewController::app'
+  requirements:
+    _permission: 'use mcp apps composer'
+    _user_is_logged_in: 'TRUE'
+mcp_apps_activity_dev.call:
+  path: '/admin/content/mcp-apps/activity/call'
+  methods: [POST]
+  defaults:
+    _controller: '\Drupal\mcp_apps_activity_dev\Controller\ActivityPreviewController::call'
+  requirements:
+    _permission: 'use mcp apps composer'
+    _user_is_logged_in: 'TRUE'
+    _csrf_request_header_token: 'TRUE'

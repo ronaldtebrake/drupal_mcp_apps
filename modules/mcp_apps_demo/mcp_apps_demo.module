@@ -11,13 +11,13 @@ use Drupal\mcp_apps_demo\DemoComposition;
  * {@inheritdoc}
  */
 function mcp_apps_demo_mcp_apps_composer_defaults_alter(array &$data): void {
-  if ($data['program'] === '' && $data['theme'] === 'mcp_apps_demo_theme') {
+  if ($data['program'] === '' && in_array($data['theme'], ['mcp_apps_demo_theme', 'byte_theme'], TRUE)) {
     if ($data['title'] === 'Component preview') {
       $data['title'] = 'A weekend in Rotterdam';
     }
-    $data['tree'] = DemoComposition::tree($data['title']);
+    $data['tree'] = DemoComposition::tree($data['title'], $data['theme']);
   }
   $data['media_tool'] = 'tool_api__composer_media_search';
   $data['media_query'] = 'Rotterdam';
-  $data['initial_component'] = 'mcp_apps_demo_theme:hero-side-by-side';
+  $data['initial_component'] = $data['theme'] . ':hero-side-by-side';
 }

@@ -1,0 +1,37 @@
+name: 'Editorial activity'
+description: 'A reusable timeline of fictional publishing, review and update events.'
+status: experimental
+props:
+  type: object
+  required:
+    - events
+  properties:
+    events:
+      type: array
+      maxItems: 12
+      items:
+        type: object
+        required:
+          - title
+          - action
+          - actor
+          - detail
+          - time
+        properties:
+          title:
+            type: string
+          action:
+            type: string
+          actor:
+            type: string
+          detail:
+            type: string
+          time:
+            type: string
+          section:
+            type: string
+          days_ago:
+            type: integer
+libraryOverrides:
+  dependencies:
+    - mcp_apps_activity_demo/design

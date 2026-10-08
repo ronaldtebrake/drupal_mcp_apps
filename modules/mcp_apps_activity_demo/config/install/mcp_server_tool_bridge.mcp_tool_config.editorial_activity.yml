@@ -1,0 +1,7 @@
+id: editorial_activity
+tool_id: editorial_activity
+description: null
+status: true
+dependencies:
+  module:
+    - mcp_apps_activity_demo

@@ -1,0 +1,4 @@
+name: Activity test subtheme
+type: theme
+base theme: mcp_apps_activity_test_theme
+core_version_requirement: ^11.4

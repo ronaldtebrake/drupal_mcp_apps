@@ -58,7 +58,7 @@ final class PreviewRenderer {
       $active = $this->initialization->getActiveThemeByName($theme);
       $this->themes->setActiveTheme($active);
       $build = $this->composition->renderArray($tree);
-      $build['#attached']['library'] = $this->themeList->getExtensionInfo($theme)['libraries'] ?? [];
+      $build['#attached']['library'] = $active->getLibraries();
       $html = (string) $this->renderer->executeInRenderContext(new RenderContext(), function () use (&$build) {
         return $this->renderer->render($build);
       });
@@ -117,7 +117,8 @@ final class PreviewRenderer {
       'avif' => 'image/avif',
       'gif' => 'image/gif',
     ];
-    if (!$file || (!$owned && !$this->composition->canTransportImage($file)) || !str_starts_with($file, realpath(DRUPAL_ROOT) . '/') || !isset($mimes[$extension]) || !is_file($file) || filesize($file) > 6 * 1024 * 1024) {
+    // Installed extensions can live outside the web root via Composer symlinks.
+    if (!$file || (!$owned && !$this->composition->canTransportImage($file)) || !isset($mimes[$extension]) || !is_file($file) || filesize($file) > 6 * 1024 * 1024) {
       throw new \InvalidArgumentException('Unsupported or missing preview asset: ' . $url);
     }
     $id = hash('sha256', $file);

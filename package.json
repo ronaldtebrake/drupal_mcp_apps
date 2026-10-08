@@ -4,13 +4,15 @@
   "type": "module",
   "scripts": {
     "build": "node ui/build.mjs",
-    "test:ui": "node tests/ui-smoke.mjs"
+    "test:ui": "node tests/ui-smoke.mjs",
+    "test:activity": "node tests/activity-ui-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "2.0.3",
     "@modelcontextprotocol/sdk": "1.32.1",
     "@openuidev/lang-core": "0.3.1",
     "@openuidev/react-lang": "0.3.1",
+    "chart.js": "4.5.1",
     "postcss": "8.5.29",
     "postcss-value-parser": "4.2.0",
     "react": "19.2.0",

@@ -1,0 +1,31 @@
+name: 'Editorial dashboard'
+description: 'A reusable editorial overview with metric, chart, story and activity slots.'
+status: experimental
+props:
+  type: object
+  required:
+    - title
+    - description
+    - period
+    - as_of
+  properties:
+    title:
+      type: string
+    description:
+      type: string
+    period:
+      type: string
+    as_of:
+      type: string
+slots:
+  metrics:
+    title: 'Metric cards'
+  chart:
+    title: 'Readership chart'
+  content:
+    title: 'Story performance'
+  activity:
+    title: 'Team activity'
+libraryOverrides:
+  dependencies:
+    - mcp_apps_activity_demo/design

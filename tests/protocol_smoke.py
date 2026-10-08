@@ -12,6 +12,7 @@ if url:
     command.append('--uri=' + url)
 process = subprocess.Popen(command, cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
 sequence = 0
+theme = os.environ.get('MCP_APPS_PREVIEW_THEME', 'mcp_apps_demo_theme')
 
 def request(method, params):
     global sequence
@@ -56,11 +57,11 @@ try:
     assert resource['mimeType'] == 'text/html;profile=mcp-app'
     assert resource['_meta']['ui']['csp']['connectDomains'] == []
     assert 'id="app"' in resource['text']
-    opened = call('component_composer_open', {})
+    opened = call('component_composer_open', {'theme': theme})
     ui = opened['_meta']['ui']
     assert ui['tree'] and ui['catalog']
     assert 'catalog' not in opened['structuredContent']['data']
-    catalog = call('sdc_component_catalog', {'provider': 'mcp_apps_demo_theme'})
+    catalog = call('sdc_component_catalog', {'provider': theme})
     assert catalog['structuredContent'], catalog
     preview = call('component_composer_preview', {'session_id': ui['session_id'], 'composition': json.dumps(ui['tree'])})
     assert preview['structuredContent']['data']['valid'] is True
@@ -76,7 +77,7 @@ try:
     assert all(value.startswith('data:image/') for value in media['_meta']['ui']['thumbnails'].values())
     invalid = request('tools/call', {'name': 'tool_api__component_composer_preview', 'arguments': {'session_id': ui['session_id'], 'composition': '[{"component":"missing:component"}]'}})
     assert invalid['isError']
-    print('PASS: actual MCP extension, tool metadata, app resource, OpenUI preview, bounded assets, Media and rejected input.')
+    print(f'PASS ({theme}): actual MCP extension, tool metadata, app resource, OpenUI preview, bounded assets, Media and rejected input.')
 finally:
     process.terminate()
     try:

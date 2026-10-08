@@ -1,0 +1,6 @@
+<section class="pulse-panel pulse-readership">
+  <header class="pulse-panel-heading"><div><h2>Readership over time</h2><p>Every good story starts a conversation.</p></div><label class="pulse-chart-mode"><span class="pulse-visually-hidden">Chart style</span><select data-pulse-style><option value="line">Trend</option><option value="bar">Bars</option></select></label></header>
+  <div class="pulse-legend"><span><i></i>Selected period</span><span><i></i>Previous period</span></div>
+  <div class="pulse-chart"><canvas data-pulse-chart="{{ {labels: labels, current: current, previous: previous}|json_encode|escape('html_attr') }}" role="img" aria-label="Article reads compared with the previous period. Exact values are in the data table below."></canvas></div>
+  <details class="pulse-data"><summary>Explore the data table</summary><div class="pulse-table-scroll"><table><thead><tr><th scope="col">Day</th><th scope="col">Article reads</th><th scope="col">Previous period</th></tr></thead><tbody>{% for label in labels %}<tr><th scope="row">{{ label }}</th><td>{{ current[loop.index0]|number_format }}</td><td>{{ previous[loop.index0]|number_format }}</td></tr>{% endfor %}</tbody></table></div></details>
+</section>

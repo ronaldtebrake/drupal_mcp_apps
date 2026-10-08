@@ -1,0 +1,11 @@
+design:
+  js:
+    js/frame-size.js: {}
+  css:
+    component:
+      css/dashboard.css: {}
+charts:
+  js:
+    dist/charts.js: { minified: true }
+  dependencies:
+    - core/drupal

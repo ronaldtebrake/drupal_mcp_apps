@@ -36,8 +36,8 @@ final class ComposerPreviewController extends ControllerBase {
   /**
    * Returns the browser development preview.
    */
-  public function page(): Response {
-    $result = $this->invoke('component_composer_open', []);
+  public function page(Request $request): Response {
+    $result = $this->invoke('component_composer_open', ['theme' => $request->query->get('theme', '')]);
     $resource = $this->resources->build('mcp_apps_openui', 'dist/composer.html', Composer::URI);
     $content = $resource->toResourceContents();
     $boot = json_encode([

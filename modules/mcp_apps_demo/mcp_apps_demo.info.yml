@@ -1,6 +1,6 @@
 name: MCP Apps OpenUI demo
 type: module
-description: Compose a Rotterdam page from existing Mercury components inside an MCP App.
+description: Preview Rotterdam compositions using existing Mercury or Byte components.
 package: MCP
 core_version_requirement: ^11.4
 dependencies:

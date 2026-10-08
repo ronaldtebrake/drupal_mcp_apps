@@ -1,0 +1,45 @@
+name: 'Story performance'
+description: 'Accessible story drilldowns using native HTML details, reusable outside the dashboard.'
+status: experimental
+props:
+  type: object
+  required:
+    - articles
+  properties:
+    articles:
+      type: array
+      maxItems: 12
+      items:
+        type: object
+        required:
+          - title
+          - section
+          - status
+          - author
+          - summary
+          - reads
+        properties:
+          id:
+            type: integer
+          title:
+            type: string
+          section:
+            type: string
+            enum:
+              - guides
+              - culture
+          status:
+            type: string
+            enum:
+              - Published
+              - 'In review'
+          author:
+            type: string
+          summary:
+            type: string
+          reads:
+            type: integer
+            minimum: 0
+libraryOverrides:
+  dependencies:
+    - mcp_apps_activity_demo/design

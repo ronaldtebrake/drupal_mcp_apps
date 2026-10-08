@@ -1,0 +1,4 @@
+<section class="pulse-panel pulse-stories"><header class="pulse-panel-heading"><div><h2>Stories making an impact</h2><p>Open a story to see the editorial context.</p></div><span class="pulse-count">{{ articles|length }} stories</span></header>
+  <div class="pulse-story-labels"><span>STORY</span><span>READS</span></div>
+  {% for article in articles %}<details class="pulse-story"><summary><span class="pulse-story-number">{{ "%02d"|format(loop.index) }}</span><span class="pulse-story-name"><strong>{{ article.title }}</strong><small>{{ article.section|capitalize }} <span>·</span> {{ article.status }}</small></span><span class="pulse-story-reads">{{ article.reads|number_format }}</span><span class="pulse-chevron">⌄</span></summary><div class="pulse-story-detail"><p>{{ article.summary }}</p><small>By {{ article.author }} · {{ article.status }} · Fictional demo story</small></div></details>{% endfor %}
+</section>

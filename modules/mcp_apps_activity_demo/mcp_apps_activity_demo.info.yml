@@ -1,0 +1,7 @@
+name: MCP Apps activity demo
+type: module
+description: 'An editorial dashboard sharing Tool API data and native SDCs between Drupal and an MCP App.'
+package: MCP Apps
+core_version_requirement: ^11.4
+dependencies:
+  - mcp_apps:mcp_apps_openui

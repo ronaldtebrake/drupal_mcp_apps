@@ -1,0 +1,7 @@
+name: MCP Apps activity development
+type: module
+description: 'Browser testing of the activity MCP App without an MCP host. For local development only.'
+package: Development
+core_version_requirement: ^11.4
+dependencies:
+  - mcp_apps:mcp_apps_activity_demo

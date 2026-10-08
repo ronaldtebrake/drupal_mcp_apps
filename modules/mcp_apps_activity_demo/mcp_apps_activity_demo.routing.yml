@@ -1,0 +1,8 @@
+mcp_apps_activity_demo.website:
+  path: '/admin/content/mcp-apps/activity'
+  defaults:
+    _controller: '\Drupal\mcp_apps_activity_demo\Controller\ActivityController::website'
+    _title: 'Editorial pulse'
+  requirements:
+    _permission: 'use mcp apps composer'
+    _user_is_logged_in: 'TRUE'

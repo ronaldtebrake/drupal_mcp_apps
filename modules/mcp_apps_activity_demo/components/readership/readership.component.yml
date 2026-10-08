@@ -1,0 +1,31 @@
+name: 'Readership chart'
+description: 'Interactive Chart.js readership comparison with a table alternative. Works on Drupal and in an MCP App.'
+status: experimental
+props:
+  type: object
+  required:
+    - labels
+    - current
+    - previous
+  properties:
+    labels:
+      type: array
+      maxItems: 30
+      items:
+        type: string
+    current:
+      type: array
+      maxItems: 30
+      items:
+        type: integer
+        minimum: 0
+    previous:
+      type: array
+      maxItems: 30
+      items:
+        type: integer
+        minimum: 0
+libraryOverrides:
+  dependencies:
+    - mcp_apps_activity_demo/design
+    - mcp_apps_activity_demo/charts
