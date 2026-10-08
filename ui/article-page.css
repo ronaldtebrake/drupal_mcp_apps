@@ -1,3 +1,0 @@
-/* Scope node-page adjustments to the demo article; leave other pages alone. */
-.mcp-article-page{max-width:1100px;margin:0 auto;border:1px solid #d7e0e4;border-radius:3px;overflow:hidden}
-body:has(.mcp-article-page) .block-page-title-block{display:none}

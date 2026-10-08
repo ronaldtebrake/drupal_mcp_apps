@@ -1,5 +1,5 @@
 {
-  "name": "drupal-mcp-apps-demos",
+  "name": "drupal-mcp-apps-openui",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,7 +7,15 @@
     "test:ui": "node tests/ui-smoke.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "2.0.3"
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@openuidev/lang-core": "0.3.1",
+    "@openuidev/react-lang": "0.3.1",
+    "postcss": "8.5.29",
+    "postcss-value-parser": "4.2.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",

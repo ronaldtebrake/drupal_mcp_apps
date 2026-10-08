@@ -1,0 +1,8 @@
+name: Test text
+props:
+  type: object
+  required: [text]
+  properties:
+    text:
+      type: string
+      minLength: 3

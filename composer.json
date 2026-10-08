@@ -1,44 +1,48 @@
 {
   "name": "drupal/mcp_apps",
-  "description": "Drupal Media picker and article hero workflow using MCP Apps.",
+  "description": "Reusable Drupal MCP Apps resources with optional OpenUI component composition.",
   "type": "drupal-module",
   "license": "GPL-2.0-or-later",
   "require": {
     "php": ">=8.3",
-    "drupal/core": "^11",
-    "drupal/mcp_server": "2.0.0-beta5",
-    "mcp/sdk": "^0.7.1",
-    "drupal/tool": "1.0.0-beta8",
-    "drupal/mcp_server_tool_bridge": "1.0.0-beta3",
+    "drupal/core": "^11.4",
+    "drupal/mcp_server": "dev-2.x#53e08bccf3722c08d17e192c0607e14bd1447e27",
+    "mcp/sdk": "^0.8.1",
+    "drupal/tool": "dev-1.0.x#4c5809cd3d7c8dba0d71a55729a29c4695dca595",
+    "drupal/mcp_server_tool_bridge": "dev-1.x#38aebe6431a48b33471adfeb909038af427007ca",
     "drupal/mcp_server_oauth-mcp_server_oauth": "^1.0@alpha",
     "drupal/simple_oauth": "^6.1",
     "e0ipso/simple_oauth_21": "^1.13",
-    "cweagans/composer-patches": "^2.0",
-    "drupal/tool_belt": "^1.0.0-alpha5"
+    "cweagans/composer-patches": "^2.0"
+  },
+  "suggest": {
+    "drupal/mercury": "Mercury starterkit for the optional component showcase theme.",
+    "drupal/canvas": "Required by Mercury's existing image component and schemas; no Canvas authoring is used.",
+    "drupal/cva": "Required by the Mercury showcase templates."
   },
   "extra": {
     "patches": {
       "drupal/mcp_server": [
         {
-          "description": "MCP Apps proof of concept: mcp_server",
-          "url": "https://raw.githubusercontent.com/ronaldtebrake/drupal_mcp_apps/a7b5f3c5a9cd9af74e42df9acae56e4bd1a0f31e/patches/mcp_server-mcp-apps.patch",
-          "sha256": "71823e8f1501203ffae4ee5ed2addbc9e1f4bdafdcd0532b2480d20302326cf2",
+          "description": "MCP Apps contribution: drupal/mcp_server MR !89",
+          "url": "https://git.drupalcode.org/api/v4/projects/197156/merge_requests/89/raw_diffs",
+          "sha256": "00d09ded39790600357a2b5901bc03e201cf7767e3d62a46c1c74d36ea011b36",
           "depth": 1
         }
       ],
       "drupal/tool": [
         {
-          "description": "MCP Apps proof of concept: tool",
-          "url": "https://raw.githubusercontent.com/ronaldtebrake/drupal_mcp_apps/a7b5f3c5a9cd9af74e42df9acae56e4bd1a0f31e/patches/tool-mcp-apps.patch",
-          "sha256": "7b11378ba56ab7897cb5cdcb6b6a288c55de2ec9e515063cc9e885ad3ba8caaf",
+          "description": "MCP Apps contribution: drupal/tool MR !206",
+          "url": "https://git.drupalcode.org/api/v4/projects/188284/merge_requests/206/raw_diffs",
+          "sha256": "0aca91f91abef52377c6be1afa85a820efb4eda9702d8036d3bac4823af6f95e",
           "depth": 1
         }
       ],
       "drupal/mcp_server_tool_bridge": [
         {
-          "description": "MCP Apps proof of concept: mcp_server_tool_bridge",
-          "url": "https://raw.githubusercontent.com/ronaldtebrake/drupal_mcp_apps/a7b5f3c5a9cd9af74e42df9acae56e4bd1a0f31e/patches/mcp_server_tool_bridge-mcp-apps.patch",
-          "sha256": "e0652546ebe3b63f79b929c6db824e152810db9afbeb4d6c024cca8149b4651f",
+          "description": "MCP Apps contribution: drupal/mcp_server_tool_bridge MR !28",
+          "url": "https://git.drupalcode.org/api/v4/projects/216267/merge_requests/28/raw_diffs",
+          "sha256": "98603c761a5e5157db8bbb3f2c606d56d6df1e5731cf2cafc609f21aa2f2e25c",
           "depth": 1
         }
       ]

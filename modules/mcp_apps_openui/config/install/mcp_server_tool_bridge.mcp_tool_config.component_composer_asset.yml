@@ -1,0 +1,7 @@
+id: component_composer_asset
+tool_id: component_composer_asset
+description: null
+status: true
+dependencies:
+  module:
+    - mcp_apps_openui

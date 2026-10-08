@@ -1,0 +1,7 @@
+name: Unresolved reference
+props:
+  type: object
+  properties:
+    unknown:
+      type: object
+      $ref: '#/definitions/missing'

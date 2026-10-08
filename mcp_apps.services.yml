@@ -1,0 +1,4 @@
+services:
+  mcp_apps.resource_builder:
+    class: Drupal\mcp_apps\AppResourceBuilder
+    arguments: ['@extension.list.module']

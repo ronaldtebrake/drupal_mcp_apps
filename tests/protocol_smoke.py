@@ -1,116 +1,82 @@
-"""Exercise the Media picker through the real Drupal SDK MCP transport."""
-
+"""Read-only MCP Apps regression through Drupal's real stdio SDK transport."""
 import json
+import os
 import select
 import subprocess
-import os
 from pathlib import Path
-import tempfile
-
 
 root = Path(os.environ.get('DRUPAL_ROOT', os.getcwd()))
-site_url = os.environ.get('DRUPAL_BASE_URL') or os.environ.get('DDEV_PRIMARY_URL')
 command = [str(root / 'vendor/bin/drush'), 'mcp:server', os.environ.get('DRUPAL_USER', 'admin')]
-if site_url:
-    command.append('--uri=' + site_url)
-
-process = subprocess.Popen(
-    command,
-    cwd=root,
-    stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    text=True,
-    bufsize=1,
-)
+url = os.environ.get('DRUPAL_BASE_URL') or os.environ.get('DDEV_PRIMARY_URL')
+if url:
+    command.append('--uri=' + url)
+process = subprocess.Popen(command, cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
 sequence = 0
-
 
 def request(method, params):
     global sequence
     sequence += 1
-    process.stdin.write(json.dumps({"jsonrpc": "2.0", "id": sequence, "method": method, "params": params}) + "\n")
+    process.stdin.write(json.dumps({'jsonrpc': '2.0', 'id': sequence, 'method': method, 'params': params}) + '\n')
     process.stdin.flush()
     while True:
-        ready, _, _ = select.select([process.stdout], [], [], 30)
-        if not ready:
-            raise RuntimeError("MCP server response timed out")
+        if not select.select([process.stdout], [], [], 30)[0]:
+            raise RuntimeError('MCP response timed out')
         line = process.stdout.readline()
         if not line:
-            raise RuntimeError("MCP server stopped: " + process.stderr.read()[-3000:])
+            raise RuntimeError('MCP server stopped: ' + process.stderr.read()[-2000:])
         reply = json.loads(line)
-        if reply.get("id") != sequence:
-            continue
-        if "error" in reply:
-            raise RuntimeError(str(reply["error"]))
-        return reply["result"]
+        if reply.get('id') == sequence:
+            assert 'error' not in reply, reply
+            return reply['result']
 
+def call(name, arguments):
+    result = request('tools/call', {'name': 'tool_api__' + name, 'arguments': arguments})
+    assert not result.get('isError'), result
+    return result
 
 try:
-    initialization = request("initialize", {
-        "protocolVersion": "2025-03-26",
-        "capabilities": {"extensions": {"io.modelcontextprotocol/ui": {"mimeTypes": ["text/html;profile=mcp-app"]}}},
-        "clientInfo": {"name": "drupal-apps-protocol-smoke", "version": "1.0"},
-    })
-    process.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+    initialized = request('initialize', {'protocolVersion': '2025-06-18', 'capabilities': {'extensions': {'io.modelcontextprotocol/ui': {'mimeTypes': ['text/html;profile=mcp-app']}}}, 'clientInfo': {'name': 'OpenUI smoke host', 'version': '1'}})
+    assert 'io.modelcontextprotocol/ui' in initialized['capabilities']['extensions']
+    process.stdin.write(json.dumps({'jsonrpc': '2.0', 'method': 'notifications/initialized'}) + '\n')
     process.stdin.flush()
-    catalogue = []
+    tools = {}
     params = {}
     while True:
-        page = request("tools/list", params)
-        catalogue.extend(page["tools"])
-        if not page.get("nextCursor"):
+        page = request('tools/list', params)
+        tools.update({tool['name']: tool for tool in page['tools']})
+        if not page.get('nextCursor'):
             break
-        params = {"cursor": page["nextCursor"]}
-    tools = {tool["name"]: tool for tool in catalogue}
-    assert "content_atlas_open" not in tools
-    assert "content_atlas_draft" not in tools
-    assert "show_test_app" not in tools
-    assert "canvas_composer_open" not in tools
-    assert tools['tool_api__media_picker_save_hero']['_meta']['ui']['visibility'] == ['app']
-    assert tools['tool_api__media_picker_save_hero']['annotations']['readOnlyHint'] is False
-    for name, demo in [("tool_api__media_picker_open", "media-picker")]:
-        uri = "ui://drupal/" + demo
-        assert tools[name]["_meta"]["ui"]["resourceUri"] == uri
-        assert tools[name]["annotations"]["readOnlyHint"] is True
-        result = request("tools/call", {"name": name, "arguments": {}})
-        assert not result.get("isError"), result
-        data = result["structuredContent"]
-        assert data["app"] == demo
-        if site_url:
-            assert data["origin"] == site_url.rstrip("/")
-        assert len(result["content"]) == 2, "Text-only hosts need the data too."
-        if demo == "media-picker":
-            assert len(data["media"]) >= 6
-            assert all(item["thumbnail"].startswith(data["origin"]) for item in data["media"])
-            thumbnails = result["_meta"]["drupal/media-picker"]["thumbnails"]
-            assert len(thumbnails) == len(data["media"])
-            assert all(value.startswith("data:image/") for value in thumbnails.values())
-            assert "thumbnails" not in data, "Image bytes are presentation metadata, not model data."
-        content = request("resources/read", {"uri": uri})["contents"][0]
-        assert content["mimeType"] == "text/html;profile=mcp-app"
-        assert 'id="app-script"' in content["text"]
-        assert content["_meta"]["ui"]["csp"]["resourceDomains"] == [data["origin"]]
-        if demo == "media-picker":
-            assert "__MEDIA_THUMBNAILS__" in content["text"]
-            assert "base64," in content["text"], "Resource carries thumbnails if host omits tool result metadata."
-        with open(Path(tempfile.gettempdir()) / (demo + "-fixture.json"), "w", encoding="utf-8") as fixture:
-            json.dump(result, fixture)
-        print(f"PASS: {name}, structured data, textual fallback, HTML/MIME/CSP and real SDK dispatch.")
-    search = request("tools/call", {"name": "tool_api__media_picker_open", "arguments": {"query": "Rotterdam"}})
-    assert len(search["structuredContent"]["media"]) == 4
-    article = request('tools/call', {'name': 'tool_api__media_picker_open', 'arguments': {'article_title': 'weekend of discovery', 'query': 'Conference'}})
-    assert article['structuredContent']['node_id'] > 0
-    assert article['structuredContent']['hero_media'], 'Current hero survives a filtered library search.'
-    invalid = request("tools/call", {"name": "tool_api__media_picker_open", "arguments": {"node_id": -1}})
-    assert invalid["isError"] is True
-    resources = request("resources/list", {})
-    assert [item['uri'] for item in resources['resources'] if item['uri'].startswith('ui://drupal/')] == ['ui://drupal/media-picker']
-    assert {name for name, tool in tools.items() if tool.get('_meta', {}).get('ui', {}).get('resourceUri', '').startswith('ui://drupal/')} == {'tool_api__media_picker_open', 'tool_api__media_picker_save_hero'}
-    print("PASS: media search, article lookup, invalid input and the media-only app catalogue.")
-    assert initialization["capabilities"]["extensions"]["io.modelcontextprotocol/ui"]["mimeTypes"] == ["text/html;profile=mcp-app"]
-    assert "ui" in next(item for item in resources["resources"] if item["uri"] == "ui://drupal/media-picker")["_meta"]
-    print("PASS: native Tool API bridge metadata and MCP Apps extension advertisement.")
+        params = {'cursor': page['nextCursor']}
+    uri = 'ui://drupal/component-composer'
+    assert tools['tool_api__component_composer_open']['_meta']['ui']['resourceUri'] == uri
+    assert tools['tool_api__component_composer_preview']['_meta']['ui']['visibility'] == ['app']
+    assert tools['tool_api__component_composer_open']['annotations']['readOnlyHint'] is True
+    assert not any(name in tools for name in ['tool_api__media_picker_open', 'tool_api__media_picker_save_hero', 'canvas_composer_open', 'content_atlas_open'])
+    resource = request('resources/read', {'uri': uri})['contents'][0]
+    assert resource['mimeType'] == 'text/html;profile=mcp-app'
+    assert resource['_meta']['ui']['csp']['connectDomains'] == []
+    assert 'id="app"' in resource['text']
+    opened = call('component_composer_open', {})
+    ui = opened['_meta']['ui']
+    assert ui['tree'] and ui['catalog']
+    assert 'catalog' not in opened['structuredContent']['data']
+    catalog = call('sdc_component_catalog', {'provider': 'mcp_apps_demo_theme'})
+    assert catalog['structuredContent'], catalog
+    preview = call('component_composer_preview', {'session_id': ui['session_id'], 'composition': json.dumps(ui['tree'])})
+    assert preview['structuredContent']['data']['valid'] is True
+    assert 'html' not in preview['structuredContent']['data']
+    assert 'Rotterdam' in preview['_meta']['ui']['html']
+    assets = preview['_meta']['ui']['assets']
+    assert assets
+    asset = call('component_composer_asset', {'session_id': ui['session_id'], 'asset_id': next(iter(assets)), 'offset': 0})
+    assert asset['_meta']['ui']['base64']
+    assert 'base64' not in asset['structuredContent']['data']
+    media = call('composer_media_search', {'query': 'Rotterdam'})
+    assert media['structuredContent']['data']['media']
+    assert all(value.startswith('data:image/') for value in media['_meta']['ui']['thumbnails'].values())
+    invalid = request('tools/call', {'name': 'tool_api__component_composer_preview', 'arguments': {'session_id': ui['session_id'], 'composition': '[{"component":"missing:component"}]'}})
+    assert invalid['isError']
+    print('PASS: actual MCP extension, tool metadata, app resource, OpenUI preview, bounded assets, Media and rejected input.')
 finally:
     process.terminate()
     try:

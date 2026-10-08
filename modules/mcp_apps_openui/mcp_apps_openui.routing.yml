@@ -1,0 +1,16 @@
+mcp_apps_openui.preview:
+  path: '/admin/content/mcp-apps/composer'
+  defaults:
+    _controller: '\Drupal\mcp_apps_openui\Controller\ComposerPreviewController::page'
+  requirements:
+    _permission: 'use mcp apps composer'
+    _user_is_logged_in: 'TRUE'
+mcp_apps_openui.browser_call:
+  path: '/admin/content/mcp-apps/composer/call'
+  defaults:
+    _controller: '\Drupal\mcp_apps_openui\Controller\ComposerPreviewController::call'
+  methods: [POST]
+  requirements:
+    _permission: 'use mcp apps composer'
+    _user_is_logged_in: 'TRUE'
+    _csrf_request_header_token: 'TRUE'

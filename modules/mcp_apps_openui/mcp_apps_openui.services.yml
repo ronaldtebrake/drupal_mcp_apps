@@ -1,0 +1,16 @@
+services:
+  mcp_apps_openui.composer:
+    class: Drupal\mcp_apps_openui\Composer
+    arguments: ['@mcp_apps_openui.catalog', '@mcp_apps_openui.composition', '@mcp_apps_openui.preview', '@mcp_apps_openui.sessions', '@config.factory', '@module_handler']
+  mcp_apps_openui.catalog:
+    class: Drupal\mcp_apps_openui\ComponentCatalog
+    arguments: ['@plugin.manager.sdc', '@theme_handler']
+  mcp_apps_openui.composition:
+    class: Drupal\mcp_apps_openui\Composition
+    arguments: ['@mcp_apps_openui.catalog', '@plugin.manager.sdc', '@Drupal\Core\Theme\Component\ComponentValidator', '@entity_type.manager', '@file_url_generator', '@file_system']
+  mcp_apps_openui.preview:
+    class: Drupal\mcp_apps_openui\PreviewRenderer
+    arguments: ['@mcp_apps_openui.composition', '@renderer', '@asset.resolver', '@theme.manager', '@theme.initialization', '@extension.list.theme', '@extension.list.module', '@request_stack']
+  mcp_apps_openui.sessions:
+    class: Drupal\mcp_apps_openui\ComposerSessions
+    arguments: ['@keyvalue.expirable', '@current_user', '@lock']

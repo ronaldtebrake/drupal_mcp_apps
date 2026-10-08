@@ -1,0 +1,11 @@
+name: MCP Apps OpenUI demo
+type: module
+description: Compose a Rotterdam page from existing Mercury components inside an MCP App.
+package: MCP
+core_version_requirement: ^11.4
+dependencies:
+  - mcp_apps:mcp_apps_openui
+  - drupal:media
+  - drupal:image
+  - cva:cva
+  - canvas:canvas

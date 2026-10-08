@@ -1,0 +1,7 @@
+mcp_apps_openui.settings:
+  type: config_object
+  label: Component composer settings
+  mapping:
+    theme:
+      type: string
+      label: Installed preview theme

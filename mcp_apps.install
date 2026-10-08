@@ -2,31 +2,21 @@
 
 /**
  * @file
- * Registers the demo resource provider using MCP Server configuration.
+ * Upgrade the earlier showcase without deleting its content or files.
  */
-
-declare(strict_types=1);
 
 /**
- * Implements hook_install().
+ * Remove the retired hero tools and resource registration.
  */
-function mcp_apps_install(): void {
-  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
-  $plugins = $config->get('plugins') ?? [];
-  $plugins['mcp_apps_media_picker'] = [
-    'id' => 'mcp_apps_media_picker',
-    'enabled' => TRUE,
-    'configuration' => [],
-  ];
-  $config->set('plugins', $plugins)->save();
-}
-
-/**
- * Implements hook_uninstall().
- */
-function mcp_apps_uninstall(): void {
+function mcp_apps_update_10001(): void {
   $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
   $plugins = $config->get('plugins') ?? [];
   unset($plugins['mcp_apps_media_picker']);
   $config->set('plugins', $plugins)->save();
+  foreach (['media_picker_open', 'media_picker_save_hero'] as $id) {
+    $config = \Drupal::configFactory()->getEditable('mcp_server_tool_bridge.mcp_tool_config.' . $id);
+    if ($config->get('tool_id') === $id) {
+      $config->delete();
+    }
+  }
 }

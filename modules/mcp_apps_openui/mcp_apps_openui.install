@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Registers the composer resource provider.
+ */
+
+/**
+ * {@inheritdoc}
+ */
+function mcp_apps_openui_install(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  $plugins['mcp_apps_composer'] = ['id' => 'mcp_apps_composer', 'enabled' => TRUE, 'configuration' => []];
+  $config->set('plugins', $plugins)->save();
+}
+
+/**
+ * {@inheritdoc}
+ */
+function mcp_apps_openui_uninstall(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  unset($plugins['mcp_apps_composer']);
+  $config->set('plugins', $plugins)->save();
+}

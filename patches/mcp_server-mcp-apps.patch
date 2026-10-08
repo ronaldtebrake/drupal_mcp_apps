@@ -1,15 +1,17 @@
+diff --git a/src/Attribute/Tool.php b/src/Attribute/Tool.php
+index 75d4fb4a0e7739996cc12cc05d197d007a27be6b..c2f4342572bbfe35244436af1a0e77b36bd20cac 100644
 --- a/src/Attribute/Tool.php
 +++ b/src/Attribute/Tool.php
-@@ -45,6 +45,8 @@
+@@ -45,6 +45,8 @@ final class Tool extends Plugin {
     *   Whether repeated identical calls produce no additional effect.
     * @param bool $openWorld
     *   Whether the tool may interact with external entities.
-+   * @param array $meta
-+   *   Arbitrary MCP tool metadata, including MCP Apps UI links.
++   * @param array<string, mixed> $meta
++   *   Arbitrary MCP metadata, serialized as _meta on the tool definition.
     */
    public function __construct(
      public readonly string $id,
-@@ -58,6 +60,7 @@
+@@ -58,6 +60,7 @@ final class Tool extends Plugin {
      public readonly bool $destructive = TRUE,
      public readonly bool $idempotent = FALSE,
      public readonly bool $openWorld = TRUE,
@@ -17,7 +19,7 @@
    ) {}
  
    /**
-@@ -82,6 +85,7 @@
+@@ -82,6 +85,7 @@ final class Tool extends Plugin {
        destructive: $this->destructive,
        idempotent: $this->idempotent,
        openWorld: $this->openWorld,
@@ -25,65 +27,75 @@
      );
      $definition->setClass($this->getClass());
      if ($this->getProvider() !== NULL) {
+diff --git a/src/Capability/Handler/ResourceProviderHandler.php b/src/Capability/Handler/ResourceProviderHandler.php
+index db67bcb778468daf2caa57ff754337ef1db4779e..16db157dcfb1964bab64fc65c1d0d8992170f469 100644
 --- a/src/Capability/Handler/ResourceProviderHandler.php
 +++ b/src/Capability/Handler/ResourceProviderHandler.php
-@@ -8,6 +8,8 @@
+@@ -7,6 +7,8 @@ namespace Drupal\mcp_server\Capability\Handler;
+ use Drupal\Core\Session\AccountInterface;
  use Drupal\mcp_server\Plugin\ResourceProviderInterface;
  use Drupal\mcp_server\Resource\ResourceContentCache;
- use Mcp\Server\ClientGateway;
-+use Mcp\Schema\Content\TextResourceContents;
 +use Mcp\Schema\Content\BlobResourceContents;
++use Mcp\Schema\Content\TextResourceContents;
+ use Mcp\Server\ClientGateway;
  use Mcp\Server\Handler\ResourceHandlerInterface;
  
- /**
-@@ -25,11 +27,15 @@
+@@ -24,12 +26,16 @@ final readonly class ResourceProviderHandler implements ResourceHandlerInterface
+   /**
     * {@inheritdoc}
     */
-   public function read(string $uri, ClientGateway $gateway): mixed {
+-  public function read(string $uri, ClientGateway $gateway): mixed {
 -    return $this->cache->generate(
++  public function read(string $uri, ClientGateway $gateway): TextResourceContents|BlobResourceContents {
 +    $content = $this->cache->generate(
        $uri,
        fn() => $this->plugin->checkAccess($uri, $this->currentUser),
        fn() => $this->plugin->getResourceContent($uri),
      );
-+    // SDK objects retain content metadata separately from descriptor metadata.
++    // SDK contents retain _meta independently of the resource descriptor.
 +    return isset($content['text'])
 +      ? TextResourceContents::fromArray($content)
 +      : BlobResourceContents::fromArray($content);
    }
  
  }
+diff --git a/src/Capability/Handler/ResourceTemplateProviderHandler.php b/src/Capability/Handler/ResourceTemplateProviderHandler.php
+index 3f9ab3e2e8278fb470fbfe16b668aa510075dc3c..2cae8e6c74ff12b05897483aaef89fbff9f39a46 100644
 --- a/src/Capability/Handler/ResourceTemplateProviderHandler.php
 +++ b/src/Capability/Handler/ResourceTemplateProviderHandler.php
-@@ -8,6 +8,8 @@
+@@ -7,6 +7,8 @@ namespace Drupal\mcp_server\Capability\Handler;
+ use Drupal\Core\Session\AccountInterface;
  use Drupal\mcp_server\Plugin\ResourceTemplateProviderInterface;
  use Drupal\mcp_server\Resource\ResourceContentCache;
- use Mcp\Server\ClientGateway;
-+use Mcp\Schema\Content\TextResourceContents;
 +use Mcp\Schema\Content\BlobResourceContents;
++use Mcp\Schema\Content\TextResourceContents;
+ use Mcp\Server\ClientGateway;
  use Mcp\Server\Handler\ResourceTemplateHandlerInterface;
  
- /**
-@@ -27,11 +29,15 @@
+@@ -26,12 +28,16 @@ final readonly class ResourceTemplateProviderHandler implements ResourceTemplate
+   /**
     * {@inheritdoc}
     */
-   public function read(string $uri, array $variables, ClientGateway $gateway): mixed {
+-  public function read(string $uri, array $variables, ClientGateway $gateway): mixed {
 -    return $this->cache->generate(
++  public function read(string $uri, array $variables, ClientGateway $gateway): TextResourceContents|BlobResourceContents {
 +    $content = $this->cache->generate(
        $uri,
        fn() => $this->plugin->checkAccess($uri, $this->currentUser),
        fn() => $this->plugin->getResourceContent($uri),
      );
-+    // SDK objects retain content metadata separately from descriptor metadata.
++    // SDK contents retain _meta independently of the resource descriptor.
 +    return isset($content['text'])
 +      ? TextResourceContents::fromArray($content)
 +      : BlobResourceContents::fromArray($content);
    }
  
  }
+diff --git a/src/Definition/ToolDefinition.php b/src/Definition/ToolDefinition.php
+index ba44f64d5e6bcedd24b97b3eec3d2bc9555c66c0..898a1513253c42c378a85c74a3bc96b8ca6e1217 100644
 --- a/src/Definition/ToolDefinition.php
 +++ b/src/Definition/ToolDefinition.php
-@@ -50,6 +50,7 @@
+@@ -50,6 +50,7 @@ final class ToolDefinition extends PluginDefinition implements DerivablePluginDe
      public readonly bool $openWorld = TRUE,
      public readonly ?string $toolId = NULL,
      public readonly ?string $mcpToolConfigId = NULL,
@@ -91,16 +103,16 @@
    ) {
      $this->id = $id;
    }
-@@ -116,6 +117,8 @@
+@@ -116,6 +117,8 @@ final class ToolDefinition extends PluginDefinition implements DerivablePluginDe
     *   Optional destructive flag override.
     * @param bool|null $idempotent
     *   Optional idempotent flag override.
-+   * @param array|null $meta
-+   *   Optional metadata override; NULL preserves the base metadata.
++   * @param array<string, mixed>|null $meta
++   *   Optional metadata override. NULL inherits the base; [] clears it.
     *
     * @return self
     *   A new ToolDefinition with derivative metadata populated.
-@@ -131,6 +134,7 @@
+@@ -131,6 +134,7 @@ final class ToolDefinition extends PluginDefinition implements DerivablePluginDe
      ?bool $readOnly = NULL,
      ?bool $destructive = NULL,
      ?bool $idempotent = NULL,
@@ -108,34 +120,36 @@
    ): self {
      $clone = new self(
        id: $this->id . WireSafeDerivativeDiscoveryDecorator::SEPARATOR . $derivativeId,
-@@ -144,6 +148,7 @@
-       destructive: $destructive ?? $this->destructive,
-       idempotent: $idempotent ?? $this->idempotent,
+@@ -146,6 +150,7 @@ final class ToolDefinition extends PluginDefinition implements DerivablePluginDe
        openWorld: $this->openWorld,
-+      meta: $meta ?? $this->meta,
        toolId: $toolId ?? $this->toolId,
        mcpToolConfigId: $mcpToolConfigId ?? $this->mcpToolConfigId,
++      meta: $meta ?? $this->meta,
      );
+     $clone->setClass($this->getClass());
+     $clone->setProvider($this->provider);
+diff --git a/src/McpServerFactory.php b/src/McpServerFactory.php
+index fc218055b6cb5261668b0393dd8b1a0ffb086617..6f75e21e628be799f727e05bce94e2845479d227 100644
 --- a/src/McpServerFactory.php
 +++ b/src/McpServerFactory.php
-@@ -35,6 +35,7 @@
- use Mcp\Schema\ToolAnnotations;
- use Mcp\Server;
- use Mcp\Server\Builder;
+@@ -30,6 +30,7 @@ use Mcp\Capability\Discovery\Discoverer;
+ use Mcp\Capability\Registry\Loader\DiscoveryLoader;
+ use Mcp\Capability\Registry\ReferenceHandler;
+ use Mcp\Capability\Tool\NameValidator;
 +use Mcp\Schema\Extension\Apps\McpApps;
- use Mcp\Server\Session\SessionStoreInterface;
- use Psr\Container\ContainerInterface;
- use Psr\EventDispatcher\EventDispatcherInterface;
-@@ -186,6 +187,8 @@
-       ->setSession($this->sessionStore)
-       ->setContainer($this->container);
+ use Mcp\Schema\Prompt;
+ use Mcp\Schema\PromptArgument;
+ use Mcp\Schema\ResourceDefinition;
+@@ -192,6 +193,8 @@ final class McpServerFactory {
+         new ShieldedReferenceHandler(new ReferenceHandler($this->container)),
+       );
  
 +    $builder->enableExtension(new McpApps());
 +
      $this->registerTools($builder);
      $this->registerPrompts($builder);
      $this->registerResources($builder);
-@@ -292,6 +295,7 @@
+@@ -298,6 +301,7 @@ final class McpServerFactory {
            description: (string) $definition->description,
            annotations: $annotations,
            outputSchema: $definition->outputSchema,
@@ -143,7 +157,7 @@
          );
          $builder->add($tool, $plugin);
        }
-@@ -649,6 +653,7 @@
+@@ -657,6 +661,7 @@ final class McpServerFactory {
            name: $resource_data['name'],
            description: $resource_data['description'] ?? '',
            mimeType: $resource_data['mimeType'] ?? 'application/json',
@@ -151,17 +165,43 @@
          );
          $builder->add($template, $handler, $completion_providers);
        }
-@@ -718,6 +723,7 @@
-           name: $resource_data['name'],
+@@ -727,6 +732,7 @@ final class McpServerFactory {
            description: $resource_data['description'] ?? '',
            mimeType: $resource_data['mimeType'] ?? 'application/json',
-+          meta: $resource_data['meta'] ?? NULL,
            size: $resource_data['size'] ?? NULL,
++          meta: $resource_data['meta'] ?? NULL,
          );
          $builder->add($resource, $handler);
+       }
+diff --git a/src/Plugin/ResourceProviderInterface.php b/src/Plugin/ResourceProviderInterface.php
+index b1ab344365738ec294a8cb003a48f2ff89e24f8c..074de4a3a0691951dad5df596b626553a3b4a19a 100644
+--- a/src/Plugin/ResourceProviderInterface.php
++++ b/src/Plugin/ResourceProviderInterface.php
+@@ -64,6 +64,7 @@ interface ResourceProviderInterface extends PluginInspectionInterface {
+    *   - description: string - Resource description (optional).
+    *   - mimeType: string - MIME type of resource content (optional).
+    *   - size: int - Advertised size in bytes (optional).
++   *   - meta: array - Optional descriptor metadata serialized as _meta.
+    */
+   public function getResources(): array;
+ 
+diff --git a/src/Plugin/ResourceTemplateProviderInterface.php b/src/Plugin/ResourceTemplateProviderInterface.php
+index b272148ad9b58933bb1fce9518fcd1429b133c8d..59a9eeed1b0183d1db86112f87dae56e8416dbfe 100644
+--- a/src/Plugin/ResourceTemplateProviderInterface.php
++++ b/src/Plugin/ResourceTemplateProviderInterface.php
+@@ -71,6 +71,7 @@ interface ResourceTemplateProviderInterface extends PluginInspectionInterface {
+    *   - name: string - Human-readable name
+    *   - description: string - Resource description
+    *   - mimeType: string - MIME type of resource content
++   *   - meta: array - Optional descriptor metadata serialized as _meta.
+    */
+   public function getResources(): array;
+ 
+diff --git a/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceProvider/TestResourceProvider.php b/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceProvider/TestResourceProvider.php
+index 3cf17d3f95affc894f4de00fbdc62a03f774d223..2b670f26a6fce9274ea86fde190a517702a41ce1 100644
 --- a/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceProvider/TestResourceProvider.php
 +++ b/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceProvider/TestResourceProvider.php
-@@ -99,6 +99,7 @@
+@@ -99,6 +99,7 @@ final class TestResourceProvider extends ResourceProviderBase {
          'name' => 'Hello',
          'description' => 'Fixed test resource.',
          'mimeType' => 'application/json',
@@ -169,7 +209,7 @@
        ],
      ];
    }
-@@ -135,6 +136,7 @@
+@@ -135,6 +136,7 @@ final class TestResourceProvider extends ResourceProviderBase {
        'uri' => $uri,
        'mimeType' => 'application/json',
        'text' => '{"hello":"world"}',
@@ -177,17 +217,104 @@
      ];
      $metadata = new CacheableMetadata();
      $maxAge = $this->configuration['max_age'] ?? NULL;
+diff --git a/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceTemplateProvider/TestCompletionResourceTemplate.php b/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceTemplateProvider/TestCompletionResourceTemplate.php
+index 4f12adf1635940f73f6ef05fe7d9ca14ae1b3be6..bba17bcf9130dc3abec564f6715072a8e3814611 100644
+--- a/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceTemplateProvider/TestCompletionResourceTemplate.php
++++ b/tests/modules/mcp_server_test/src/Plugin/mcp_server/ResourceTemplateProvider/TestCompletionResourceTemplate.php
+@@ -47,6 +47,7 @@ final class TestCompletionResourceTemplate extends ResourceTemplateProviderBase
+         'name' => 'Fruit',
+         'description' => 'A fruit resource keyed by name.',
+         'mimeType' => 'application/json',
++        'meta' => ['test/custom' => 'template descriptor'],
+       ],
+     ];
+   }
+@@ -84,6 +85,7 @@ final class TestCompletionResourceTemplate extends ResourceTemplateProviderBase
+       'uri' => $uri,
+       'mimeType' => 'application/json',
+       'text' => json_encode(['fruit' => $matches[1]], JSON_THROW_ON_ERROR),
++      '_meta' => ['test/custom' => 'template content'],
+     ]);
+   }
+ 
+diff --git a/tests/modules/mcp_server_test/src/Plugin/mcp_server/Tool/EchoTool.php b/tests/modules/mcp_server_test/src/Plugin/mcp_server/Tool/EchoTool.php
+index 4595a5883b299143ce1d4d564d53cf438f5a14b8..e8f96849f234714e04ddf716d9357ff1125c8a14 100644
+--- a/tests/modules/mcp_server_test/src/Plugin/mcp_server/Tool/EchoTool.php
++++ b/tests/modules/mcp_server_test/src/Plugin/mcp_server/Tool/EchoTool.php
+@@ -47,6 +47,7 @@ use Mcp\Server\ClientGateway;
+   destructive: FALSE,
+   idempotent: TRUE,
+   openWorld: FALSE,
++  meta: ['ui' => ['resourceUri' => 'ui://test/app'], 'test/custom' => 7],
+ )]
+ final class EchoTool extends ToolPluginBase {
+ 
+diff --git a/tests/src/Functional/McpServerFunctionalTest.php b/tests/src/Functional/McpServerFunctionalTest.php
+index 13c4ca2b805eb69c54e3fb448a80476c99e95fd3..f595d38f8f7f0e1ddabc385ff3f9dc963ae23f13 100644
+--- a/tests/src/Functional/McpServerFunctionalTest.php
++++ b/tests/src/Functional/McpServerFunctionalTest.php
+@@ -6,6 +6,7 @@ namespace Drupal\Tests\mcp_server\Functional;
+ 
+ use Drupal\Component\Serialization\Json;
+ use Drupal\Tests\BrowserTestBase;
++use Mcp\Schema\Extension\Apps\McpApps;
+ use PHPUnit\Framework\Attributes\Group;
+ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+ 
+@@ -172,6 +173,10 @@ final class McpServerFunctionalTest extends BrowserTestBase {
+     $this->assertNotNull($echo_tool, 'Core tool should be discoverable');
+     $this->assertArrayHasKey('inputSchema', $echo_tool);
+     $this->assertArrayHasKey('message', $echo_tool['inputSchema']['properties'] ?? []);
++    $this->assertSame([
++      'ui' => ['resourceUri' => 'ui://test/app'],
++      'test/custom' => 7,
++    ], $echo_tool['_meta']);
+   }
+ 
+   /**
+@@ -283,6 +288,7 @@ final class McpServerFunctionalTest extends BrowserTestBase {
+     $uri_template = NULL;
+     foreach ($templates['result']['resourceTemplates'] as $template) {
+       if ($template['name'] === 'Fruit') {
++        $this->assertSame(['test/custom' => 'template descriptor'], $template['_meta']);
+         $uri_template = $template['uriTemplate'];
+         break;
+       }
+@@ -306,6 +312,10 @@ final class McpServerFunctionalTest extends BrowserTestBase {
+     );
+     $this->assertSame(2, $body['result']['completion']['total']);
+     $this->assertFalse($body['result']['completion']['hasMore']);
++    $resource = $this->callMcp('resources/read', [
++      'uri' => 'test://fruit/blackberry',
++    ], 402, $session_id);
++    $this->assertSame(['test/custom' => 'template content'], $resource['result']['contents'][0]['_meta']);
+   }
+ 
+   /**
+@@ -379,6 +389,10 @@ final class McpServerFunctionalTest extends BrowserTestBase {
+ 
+     $this->assertEquals(200, $response->getStatusCode());
+     $this->assertTrue($response->hasHeader('Mcp-Session-Id'));
++    $body = Json::decode($response->getBody()->getContents());
++    $this->assertSame([
++      McpApps::EXTENSION_ID => ['mimeTypes' => [McpApps::MIME_TYPE]],
++    ], $body['result']['capabilities']['extensions']);
+     return $response->getHeaderLine('Mcp-Session-Id');
+   }
+ 
+diff --git a/tests/src/Kernel/Plugin/ResourceProviderRegistrationTest.php b/tests/src/Kernel/Plugin/ResourceProviderRegistrationTest.php
+index 731f179bae6dc29bfdc3b3d746c871cdb312926a..ba492d0eba41c553cab71284ac4c7ce4090cd3ce 100644
 --- a/tests/src/Kernel/Plugin/ResourceProviderRegistrationTest.php
 +++ b/tests/src/Kernel/Plugin/ResourceProviderRegistrationTest.php
-@@ -8,6 +8,7 @@
- use Drupal\mcp_server\Exception\McpAuthorizationDeniedException;
+@@ -8,6 +8,7 @@ use Drupal\KernelTests\KernelTestBase;
  use Mcp\Capability\Registry\ResourceReference;
  use Mcp\Capability\RegistryInterface;
+ use Mcp\Exception\ResourceNotFoundException;
 +use Mcp\Schema\Content\TextResourceContents;
  use Mcp\Server;
  use Mcp\Server\Handler\Request\ReadResourceHandler;
  use Mcp\Server\Session\SessionInterface;
-@@ -84,6 +85,7 @@
+@@ -84,6 +85,7 @@ final class ResourceProviderRegistrationTest extends KernelTestBase {
      $this->assertSame('test://hello', $reference->resource->uri);
      $this->assertSame('Hello', $reference->resource->name);
      $this->assertSame('application/json', $reference->resource->mimeType);
@@ -195,7 +322,7 @@
    }
  
    /**
-@@ -97,10 +99,11 @@
+@@ -97,10 +99,11 @@ final class ResourceProviderRegistrationTest extends KernelTestBase {
      assert($reference instanceof ResourceReference);
  
      $result = ($reference->handler)($this->argumentBag('test://hello'));
@@ -211,7 +338,7 @@
    }
  
    /**
-@@ -168,8 +171,8 @@
+@@ -165,8 +168,9 @@ final class ResourceProviderRegistrationTest extends KernelTestBase {
      $first = ($reference->handler)($this->argumentBag('test://hello'));
      $second = ($reference->handler)($this->argumentBag('test://hello'));
  
@@ -219,26 +346,147 @@
 -    $this->assertSame($first, $second);
 +    $this->assertInstanceOf(TextResourceContents::class, $first);
 +    $this->assertEquals($first, $second);
++    $this->assertSame(['test/custom' => 'content'], $second->meta);
  
      $count = $this->container->get('state')
        ->get('test_resource.get_content_call_count', 0);
+diff --git a/tests/src/Unit/Capability/Handler/ResourceProviderHandlerTest.php b/tests/src/Unit/Capability/Handler/ResourceProviderHandlerTest.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..e9816ce3da3a705f4e6f0f93d2d7eb2eecd00450
+--- /dev/null
++++ b/tests/src/Unit/Capability/Handler/ResourceProviderHandlerTest.php
+@@ -0,0 +1,94 @@
++<?php
++
++declare(strict_types=1);
++
++namespace Drupal\Tests\mcp_server\Unit\Capability\Handler;
++
++use Drupal\Component\Datetime\TimeInterface;
++use Drupal\Core\Access\AccessResult;
++use Drupal\Core\Cache\Context\CacheContextsManager;
++use Drupal\Core\Cache\Context\ContextCacheKeys;
++use Drupal\Core\Cache\MemoryBackend;
++use Drupal\Core\Session\AccountInterface;
++use Drupal\mcp_server\Capability\Handler\ResourceProviderHandler;
++use Drupal\mcp_server\Capability\Handler\ResourceTemplateProviderHandler;
++use Drupal\mcp_server\Plugin\ResourceProviderInterface;
++use Drupal\mcp_server\Plugin\ResourceTemplateProviderInterface;
++use Drupal\mcp_server\Resource\CacheableResourceContent;
++use Drupal\mcp_server\Resource\ResourceContentCache;
++use Drupal\Tests\UnitTestCase;
++use Mcp\Schema\Content\BlobResourceContents;
++use Mcp\Schema\Content\TextResourceContents;
++use Mcp\Server\ClientGateway;
++use PHPUnit\Framework\Attributes\DataProvider;
++use PHPUnit\Framework\Attributes\Group;
++
++/**
++ * Tests resource handlers preserve content metadata on fresh and cached reads.
++ *
++ * @group mcp_server
++ */
++#[Group('mcp_server')]
++final class ResourceProviderHandlerTest extends UnitTestCase {
++
++  /**
++   * Both handlers convert text and blobs without losing content metadata.
++   *
++   * @param bool $template
++   *   Whether to use the resource template handler.
++   * @param bool $blob
++   *   Whether to supply blob content.
++   */
++  #[DataProvider('contentProvider')]
++  public function testContentMetadata(bool $template, bool $blob): void {
++    $uri = 'ui://test/app';
++    $content = [
++      'uri' => $uri,
++      'mimeType' => $blob ? 'application/octet-stream' : 'text/html;profile=mcp-app',
++      $blob ? 'blob' : 'text' => $blob ? base64_encode('test') : '<h1>Test app</h1>',
++      '_meta' => ['ui' => ['csp' => ['resourceDomains' => ['https://example.com']]]],
++    ];
++    $contexts = $this->createMock(CacheContextsManager::class);
++    $contexts->method('convertTokensToKeys')->willReturn(new ContextCacheKeys([]));
++    $cache = new ResourceContentCache(
++      new MemoryBackend($this->createMock(TimeInterface::class)),
++      $contexts,
++    );
++    $account = $this->createMock(AccountInterface::class);
++    $gateway = $this->createMock(ClientGateway::class);
++    if ($template) {
++      $plugin = $this->createMock(ResourceTemplateProviderInterface::class);
++      $handler = new ResourceTemplateProviderHandler($plugin, $cache, $account);
++      $read = fn() => $handler->read($uri, [], $gateway);
++    }
++    else {
++      $plugin = $this->createMock(ResourceProviderInterface::class);
++      $handler = new ResourceProviderHandler($plugin, $cache, $account);
++      $read = fn() => $handler->read($uri, $gateway);
++    }
++    $plugin->expects($this->exactly(2))->method('checkAccess')
++      ->with($uri, $account)->willReturn(AccessResult::allowed());
++    $plugin->expects($this->once())->method('getResourceContent')
++      ->with($uri)->willReturn(CacheableResourceContent::fromArray($content));
++
++    // The second read exercises conversion of the stored content array.
++    for ($i = 0; $i < 2; $i++) {
++      $result = $read();
++      $this->assertInstanceOf($blob ? BlobResourceContents::class : TextResourceContents::class, $result);
++      $this->assertEquals($content, $result->jsonSerialize());
++    }
++  }
++
++  /**
++   * Covers both content types in both resource handlers.
++   */
++  public static function contentProvider(): array {
++    return [
++      'resource text' => [FALSE, FALSE],
++      'resource blob' => [FALSE, TRUE],
++      'template text' => [TRUE, FALSE],
++      'template blob' => [TRUE, TRUE],
++    ];
++  }
++
++}
+diff --git a/tests/src/Unit/Definition/ToolDefinitionTest.php b/tests/src/Unit/Definition/ToolDefinitionTest.php
+index 3d4c016c9633749367f17d26a64d69801096b14c..22aacc329388d24eb91ca35528d806b0c059d870 100644
 --- a/tests/src/Unit/Definition/ToolDefinitionTest.php
 +++ b/tests/src/Unit/Definition/ToolDefinitionTest.php
-@@ -100,4 +100,17 @@
+@@ -5,6 +5,7 @@ declare(strict_types=1);
+ namespace Drupal\Tests\mcp_server\Unit\Definition;
+ 
+ use Drupal\Core\StringTranslation\TranslatableMarkup;
++use Drupal\mcp_server\Attribute\Tool;
+ use Drupal\mcp_server\Definition\ToolDefinition;
+ use Drupal\mcp_server\Plugin\Discovery\WireSafeDerivativeDiscoveryDecorator;
+ use Drupal\Tests\UnitTestCase;
+@@ -100,4 +101,27 @@ final class ToolDefinitionTest extends UnitTestCase {
      return $base;
    }
  
 +  /**
-+   * App links and unrelated metadata survive derivative cloning.
++   * Metadata survives attributes and can be inherited, replaced, or cleared.
 +   */
 +  public function testMetadataInheritanceAndOverride(): void {
 +    $meta = ['ui' => ['resourceUri' => 'ui://test/app'], 'test/custom' => 7];
 +    $label = new TranslatableMarkup('Test app');
-+    $base = new ToolDefinition('app', $label, $label, meta: $meta);
-+    $base->setClass(self::class);
-+    $this->assertSame($meta, $base->withDerivative('one', $label)->meta);
-+    $this->assertSame([], $base->withDerivative('two', $label, meta: [])->meta);
++    $attribute = new Tool('app', $label, $label, meta: $meta);
++    $attribute->setClass(self::class);
++    $attribute->setProvider('mcp_server_test');
++    $base = $attribute->get();
++
 +    $this->assertSame($meta, $base->meta);
++    $this->assertSame($meta, $base->withDerivative('inherited', $label)->meta);
++    $this->assertSame($meta, $base->withDerivative('null', $label, meta: NULL)->meta);
++    $this->assertSame([], $base->withDerivative('cleared', $label, meta: [])->meta);
++    $override = ['ui' => ['resourceUri' => 'ui://test/other']];
++    $this->assertSame($override, $base->withDerivative('replaced', $label, meta: $override)->meta);
++    $this->assertSame($meta, $base->meta);
++    $plain = new Tool('plain', $label, $label);
++    $plain->setClass(self::class);
++    $this->assertSame([], $plain->get()->meta);
 +  }
 +
  }

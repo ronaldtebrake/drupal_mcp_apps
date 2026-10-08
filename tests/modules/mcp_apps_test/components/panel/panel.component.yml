@@ -1,0 +1,11 @@
+name: Test panel
+props:
+  type: object
+  required: [tone]
+  properties:
+    tone:
+      type: string
+      enum: [quiet, bold]
+slots:
+  content:
+    title: Content

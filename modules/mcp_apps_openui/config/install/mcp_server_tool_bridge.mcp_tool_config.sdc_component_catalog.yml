@@ -1,0 +1,7 @@
+id: sdc_component_catalog
+tool_id: sdc_component_catalog
+description: null
+status: true
+dependencies:
+  module:
+    - mcp_apps_openui

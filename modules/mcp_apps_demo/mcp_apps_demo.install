@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Selects the demo preview theme without changing the site's theme.
+ */
+
+/**
+ * {@inheritdoc}
+ */
+function mcp_apps_demo_install(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_apps_openui.settings');
+  \Drupal::state()->set('mcp_apps_demo.previous_theme', $config->get('theme'));
+  $config->set('theme', 'mcp_apps_demo_theme')->save();
+}
+
+/**
+ * {@inheritdoc}
+ */
+function mcp_apps_demo_uninstall(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_apps_openui.settings');
+  if ($config->get('theme') === 'mcp_apps_demo_theme') {
+    $config->set('theme', \Drupal::state()->get('mcp_apps_demo.previous_theme', ''))->save();
+  }
+  \Drupal::state()->delete('mcp_apps_demo.previous_theme');
+}

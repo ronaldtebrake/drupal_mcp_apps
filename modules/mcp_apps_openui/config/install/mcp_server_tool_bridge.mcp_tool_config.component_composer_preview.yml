@@ -1,0 +1,7 @@
+id: component_composer_preview
+tool_id: component_composer_preview
+description: null
+status: true
+dependencies:
+  module:
+    - mcp_apps_openui

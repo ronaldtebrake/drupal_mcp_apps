@@ -1,0 +1,2 @@
+# Preserve downloaded patch context verbatim.
+patches/*.patch -whitespace

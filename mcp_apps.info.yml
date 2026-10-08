@@ -1,17 +1,7 @@
 name: MCP Apps
 type: module
-description: 'A Drupal Media picker MCP App with an article hero-image workflow.'
+description: 'Shared resources and host integration for Drupal MCP Apps.'
 package: MCP
-core_version_requirement: ^11
+core_version_requirement: ^11.4
 dependencies:
   - mcp_server:mcp_server
-  - tool:tool
-  - tool_belt:tool_belt_content
-  - mcp_server_tool_bridge:mcp_server_tool_bridge
-  - mcp_server_oauth:mcp_server_oauth
-  - simple_oauth_21:simple_oauth_pkce
-  - simple_oauth_21:simple_oauth_native_apps
-  - drupal:text
-  - drupal:node
-  - drupal:media
-  - drupal:image

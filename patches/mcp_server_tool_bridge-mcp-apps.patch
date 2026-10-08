@@ -1,38 +1,75 @@
+diff --git a/.ai/kenkeep/nodes/bridge/map-toolapi-execution-contract.md b/.ai/kenkeep/nodes/bridge/map-toolapi-execution-contract.md
+index 9d39e7ae7955f42b693c917250994f33d8ca66db..e05b14816afb470c7c7befdef3fbdbe5a6742498 100644
+--- a/.ai/kenkeep/nodes/bridge/map-toolapi-execution-contract.md
++++ b/.ai/kenkeep/nodes/bridge/map-toolapi-execution-contract.md
+@@ -28,6 +28,8 @@ On success, `structuredContent` is the tool's outputs keyed by output name, exac
+ { "isError": false, "structuredContent": { "<output>": ... }, "content": [ { "type": "text", "text": "<message>" }, { "type": "text", "text": "<outputs as JSON>" } ] }
+ ```
+ 
++Successful and failed execution results forward only `getFormattedResult()->getMeta()['mcp'] ?? []` as `_meta`, omitted when empty and never merged into `structuredContent` or text blocks; bridge-generated errors carry no metadata.
++
+ On failure, `isError` is TRUE, the explanation is the first text block, and there is no `structuredContent`: the schema describes outputs and a failure has none. A correctable input failure (`FailureCategory::isCorrectable()`, when a tool instance exists) adds a second text block starting with `ToolApi::INPUT_SCHEMA_PREFIX` followed by `ToolDefinitionSerializer::normalizeInputSchema()` as JSON, so clients can fix their arguments without a tools/list round-trip. Access denial and runtime failures omit it; reshaping arguments cannot fix those. Requests rejected by the SDK's advertised input schema remain JSON-RPC invalid-parameters errors and never reach this method.
+ 
+ A missing `toolId`, invalid input, denied access, a failed Tool result, or a caught `\Throwable` all produce `isError: TRUE`. Input and handle exceptions keep the input classification; other exceptions caught by the bridge are runtime failures. Failures are logged to the `mcp_server_tool_bridge` channel.
+diff --git a/.ai/kenkeep/nodes/bridge/map-toolapi-plugin-deriver.md b/.ai/kenkeep/nodes/bridge/map-toolapi-plugin-deriver.md
+index c01fe9626430ec0d771a5fa919c3a00b76750bcf..31ba22c6d1f0bb9d8b2162794b4a3daab052abdf 100644
+--- a/.ai/kenkeep/nodes/bridge/map-toolapi-plugin-deriver.md
++++ b/.ai/kenkeep/nodes/bridge/map-toolapi-plugin-deriver.md
+@@ -24,6 +24,8 @@ It iterates `mcp_tool_config` storage and skips a config when `status()` is FALS
+ 
+ Each derivative is keyed by the config machine name and its definition `id` is `tool_api__{config_id}`. The MCP behavior annotations derive from the Tool API tool: `readOnly` is `!operation->isModifying()` and `idempotent` is `operation->isIdempotent()` (Explain/Read/Transform are non-modifying and idempotent; Trigger/Write are neither), while `destructive` stays the tool author's explicit flag. `openWorld` and `outputSchema` are inherited from the base `ToolApi` definition.
+ 
++The derivative's `meta` contains only `ToolDefinition::getMeta()['mcp'] ?? []`; other consumers' metadata is excluded, and mcp_server omits `_meta` when empty.
++
+ The deriver also owns the Tool API to JSON Schema conversion for the derivative's `inputSchema`.
+ 
+ When changing this, verify the derivative id still routes through `WireSafeDerivativeDiscoveryDecorator::SEPARATOR` rather than a literal separator, since `McpToolConfig::getMcpWireName()` builds the same string independently and the two must agree.
+diff --git a/src/Plugin/Derivative/McpToolConfigDeriver.php b/src/Plugin/Derivative/McpToolConfigDeriver.php
+index 7a6678dcd191283381a865b6f0f2cd8afaae8355..bac52930b462a7bf506c54e9792d8b91a355e3bf 100644
 --- a/src/Plugin/Derivative/McpToolConfigDeriver.php
 +++ b/src/Plugin/Derivative/McpToolConfigDeriver.php
-@@ -124,6 +124,7 @@
+@@ -124,6 +124,7 @@ final class McpToolConfigDeriver extends DeriverBase implements ContainerDeriver
        readOnly: !$tool_definition->getOperation()->isModifying(),
        destructive: $tool_definition->isDestructive(),
        idempotent: $tool_definition->getOperation()->isIdempotent(),
-+      meta: $tool_definition->getMeta(),
++      meta: $tool_definition->getMeta()['mcp'] ?? [],
      );
    }
  
+diff --git a/src/Plugin/mcp_server/Tool/ToolApi.php b/src/Plugin/mcp_server/Tool/ToolApi.php
+index 9bc0e28a85b2e4e56b82e6ef1592b2091e79d44a..e1ec664cd5efcbedf3c69ba89ef9afbe0c3d9f1c 100644
 --- a/src/Plugin/mcp_server/Tool/ToolApi.php
 +++ b/src/Plugin/mcp_server/Tool/ToolApi.php
-@@ -155,7 +155,7 @@
+@@ -149,13 +149,14 @@ final class ToolApi extends ToolPluginBase {
+         $message .= "\n" . implode("\n", $formatted->getHints());
+       }
+ 
++      $meta = $formatted->getMeta()['mcp'] ?? [];
+       if (!$formatted->isSuccess()) {
+         // The category on the result decides whether the schema is echoed:
+         // a failure inside the wrapped tool's own execute() cannot be fixed
          // by reshaping the arguments unless it says so (#3582993).
-         return $this->failure($message, $tool, $formatted->getFailureCategory() ?? FailureCategory::Runtime);
+-        return $this->failure($message, $tool, $formatted->getFailureCategory() ?? FailureCategory::Runtime);
++        return $this->failure($message, $tool, $formatted->getFailureCategory() ?? FailureCategory::Runtime, $meta);
        }
 -      return $this->success($formatted->getContextValues(), $message);
-+      return $this->success($formatted->getContextValues(), $message, $formatted->getMeta());
++      return $this->success($formatted->getContextValues(), $message, $meta);
      }
      catch (InputException | HandleExceptionInterface $e) {
        // Both come from setInputValue() above, before validateInputs() can
-@@ -216,8 +216,10 @@
+@@ -216,8 +217,10 @@ final class ToolApi extends ToolPluginBase {
     *   The formatted output values keyed by output name.
     * @param string $message
     *   The result message with any hints appended.
--   */
++   * @param array<string, mixed> $meta
++   *   MCP result metadata, separate from formatted outputs.
+    */
 -  private function success(array $outputs, string $message): CallToolResult {
-+   * @param array $meta
-+   *   Presentation metadata, kept outside model-visible outputs.
-+   */
 +  private function success(array $outputs, string $message, array $meta): CallToolResult {
      $content = [];
      if ($message !== '') {
        $content[] = new TextContent($message);
-@@ -229,6 +231,7 @@
+@@ -229,6 +232,7 @@ final class ToolApi extends ToolPluginBase {
        content: $content,
        isError: FALSE,
        structuredContent: $outputs ?: NULL,
@@ -40,43 +77,170 @@
      );
    }
  
---- a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/AccessDeniedTool.php
-+++ b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/AccessDeniedTool.php
-@@ -12,7 +12,7 @@
- use Drupal\tool\ExecutableResult;
- use Drupal\tool\Tool\ToolBase;
- use Drupal\tool\Tool\ToolOperation;
--use Drupal\tool\TypedData\OutputDefinition;
-+use Drupal\Core\Plugin\Context\ContextDefinition;
+@@ -237,7 +241,9 @@ final class ToolApi extends ToolPluginBase {
+    *
+    * A failure has no structuredContent: the outputSchema describes the
+    * tool's outputs, and a failure has none. The explanation is the first
+-   * text block and the input schema, when echoed, the second.
++   * text block and the input schema, when echoed, the second. Metadata
++   * comes only from failed execution results; bridge-generated errors
++   * have none.
+    *
+    * @param string $message
+    *   The failure message.
+@@ -251,17 +257,19 @@ final class ToolApi extends ToolPluginBase {
+    *   access denial or a runtime error cannot be fixed by reshaping the
+    *   input, so attaching the schema there would only invite a wasted
+    *   retry (#3582993).
++   * @param array<string, mixed> $meta
++   *   MCP result metadata, omitted when empty.
+    *
+    * @return \Mcp\Schema\Result\CallToolResult
+    *   The MCP failure result.
+    */
+-  private function failure(string $message, ?ToolInterface $tool, FailureCategory $category): CallToolResult {
++  private function failure(string $message, ?ToolInterface $tool, FailureCategory $category, array $meta = []): CallToolResult {
+     $content = [new TextContent($message)];
+     if ($tool !== NULL && $category->isCorrectable()) {
+       $schema = $this->toolDefinitionSerializer->normalizeInputSchema($tool);
+       $content[] = new TextContent("Input schema:\n" . $this->encode($schema));
+     }
+-    return CallToolResult::error($content);
++    return CallToolResult::error($content, $meta ?: NULL);
+   }
  
- /**
-  * Test tool that always denies access.
-@@ -28,7 +28,7 @@
-   description: new TranslatableMarkup('A test tool whose access check always denies.'),
-   operation: ToolOperation::Read,
-   output_definitions: [
--    'secret' => new OutputDefinition(
-+    'secret' => new ContextDefinition(
-       data_type: 'string',
-       label: new TranslatableMarkup('Secret'),
-       description: new TranslatableMarkup('A value nobody is allowed to read.'),
---- a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/MultipleStringInputTool.php
-+++ b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/MultipleStringInputTool.php
-@@ -13,7 +13,7 @@
- use Drupal\tool\Tool\ToolBase;
- use Drupal\tool\Tool\ToolOperation;
- use Drupal\tool\TypedData\InputDefinition;
--use Drupal\tool\TypedData\OutputDefinition;
-+use Drupal\Core\Plugin\Context\ContextDefinition;
- 
- /**
-  * Test tool with a scalar input that accepts multiple values.
-@@ -37,7 +37,7 @@
+   /**
+diff --git a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/EmptyMapsTool.php b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/EmptyMapsTool.php
+index 302e2663a7754522e393883a3c4d80b3b3e54917..5a6a87de6603ed3b1eb6fbbab3745ac45a93ef57 100644
+--- a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/EmptyMapsTool.php
++++ b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/EmptyMapsTool.php
+@@ -58,6 +58,10 @@ use Drupal\tool\TypedData\MapOutputDefinition;
+       ],
      ),
    ],
-   output_definitions: [
--    'fields' => new OutputDefinition(
-+    'fields' => new ContextDefinition(
-       data_type: 'string',
-       label: new TranslatableMarkup('Fields'),
-       description: new TranslatableMarkup('The field names received.'),
++  meta: [
++    'mcp' => ['ui' => ['resourceUri' => 'ui://test/maps'], 'test/custom' => 7],
++    'example' => ['label' => 'Private definition'],
++  ],
+ )]
+ final class EmptyMapsTool extends ToolBase {
+ 
+@@ -72,6 +76,7 @@ final class EmptyMapsTool extends ToolBase {
+         'entries' => [[]],
+         'document' => ['settings' => []],
+       ],
++      meta: ['mcp' => ['test/presentation' => ['image' => 'preview-only']], 'example' => ['label' => 'Private result']],
+     );
+   }
+ 
+diff --git a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/ExplicitFailureTool.php b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/ExplicitFailureTool.php
+index 44ace38c99cf540ea6dd6fe408a401b7d102ca9c..0177d69736404628679e0537f3f30642ca7f134d 100644
+--- a/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/ExplicitFailureTool.php
++++ b/tests/modules/mcp_server_tool_test/src/Plugin/tool/Tool/ExplicitFailureTool.php
+@@ -26,6 +26,7 @@ use Drupal\tool\Tool\ToolOperation;
+   description: new TranslatableMarkup('A test tool whose execution always reports Tool API failure'),
+   operation: ToolOperation::Read,
+   input_definitions: [],
++  meta: ['example' => ['label' => 'Private definition']],
+ )]
+ final class ExplicitFailureTool extends ToolBase {
+ 
+@@ -33,7 +34,10 @@ final class ExplicitFailureTool extends ToolBase {
+    * {@inheritdoc}
+    */
+   protected function doExecute(array $values): ExecutableResult {
+-    return ExecutableResult::failure($this->t('Tool intentionally failed for wire-contract testing'));
++    return ExecutableResult::failure(
++      $this->t('Tool intentionally failed for wire-contract testing'),
++      meta: ['mcp' => ['test/retry' => ['retryable' => FALSE]], 'example' => ['label' => 'Private failure']],
++    );
+   }
+ 
+   /**
+diff --git a/tests/src/Kernel/ToolApiWireTest.php b/tests/src/Kernel/ToolApiWireTest.php
+index 15afecf0df2440e8a504910bf4816046089df2a0..0922937f69bb0d8860a6b3e5a4d2a3b92288da9c 100644
+--- a/tests/src/Kernel/ToolApiWireTest.php
++++ b/tests/src/Kernel/ToolApiWireTest.php
+@@ -62,6 +62,11 @@ final class ToolApiWireTest extends KernelTestBase {
+       'tool_id' => 'mcp_server_test:no_input',
+       'status' => TRUE,
+     ])->save();
++    McpToolConfig::create([
++      'id' => 'failed',
++      'tool_id' => 'mcp_server_test:explicit_failure',
++      'status' => TRUE,
++    ])->save();
+     McpToolConfig::create([
+       'id' => 'empty_maps',
+       'tool_id' => 'mcp_server_test:empty_maps',
+@@ -116,12 +121,35 @@ final class ToolApiWireTest extends KernelTestBase {
+   }
+ 
+   /**
+-   * Runs initialize, tools/list, and tools/call of the denied and map tools.
++   * Tests metadata reaches the client separately from formatted outputs.
++   */
++  public function testMetadataOnTheWire(): void {
++    [$list, $denied, $call, $plain, $failed] = $this->runSession();
++    $tools = array_column($list['result']['tools'], NULL, 'name');
++    $this->assertSame([
++      'ui' => ['resourceUri' => 'ui://test/maps'],
++      'test/custom' => 7,
++    ], $tools['tool_api__empty_maps']['_meta']);
++    $this->assertArrayNotHasKey('_meta', $tools['tool_api__no_args']);
++    $this->assertSame(['test/presentation' => ['image' => 'preview-only']], $call['result']['_meta']);
++    $this->assertStringNotContainsString('preview-only', json_encode($call['result']['content'], JSON_THROW_ON_ERROR));
++    $this->assertArrayNotHasKey('test/presentation', $call['result']['structuredContent']);
++    $this->assertArrayNotHasKey('_meta', $tools['tool_api__failed']);
++    $this->assertFalse($plain['result']['isError']);
++    $this->assertArrayNotHasKey('_meta', $plain['result']);
++    $this->assertArrayNotHasKey('_meta', $denied['result']);
++    $this->assertTrue($failed['result']['isError']);
++    $this->assertSame(['test/retry' => ['retryable' => FALSE]], $failed['result']['_meta']);
++    $this->assertArrayNotHasKey('structuredContent', $failed['result']);
++    $this->assertStringNotContainsString('test/retry', json_encode($failed['result']['content'], JSON_THROW_ON_ERROR));
++  }
++
++  /**
++   * Runs a session listing and calling metadata and ordinary tools.
+    *
+-   * @return array{array<string, mixed>, array<string, mixed>, array<string, mixed>}
+-   *   The decoded tools/list response, the decoded tools/call response of the
+-   *   denied tool and that of the empty maps tool, each with the raw JSON
+-   *   line under "raw".
++   * @return array<int, array<string, mixed>>
++   *   Responses for list, denied, maps, no-input, and failed calls, with
++   *   the raw JSON line under "raw".
+    */
+   private function runSession(): array {
+     $requests = [
+@@ -149,6 +177,18 @@ final class ToolApiWireTest extends KernelTestBase {
+         'method' => 'tools/call',
+         'params' => ['name' => 'tool_api__empty_maps', 'arguments' => []],
+       ],
++      [
++        'jsonrpc' => '2.0',
++        'id' => 5,
++        'method' => 'tools/call',
++        'params' => ['name' => 'tool_api__no_args', 'arguments' => []],
++      ],
++      [
++        'jsonrpc' => '2.0',
++        'id' => 6,
++        'method' => 'tools/call',
++        'params' => ['name' => 'tool_api__failed', 'arguments' => []],
++      ],
+     ];
+     $stdin = fopen('php://memory', 'r+');
+     $stdout = fopen('php://memory', 'r+');
+@@ -219,7 +259,9 @@ final class ToolApiWireTest extends KernelTestBase {
+     $this->assertArrayHasKey(2, $responses, $transport->captured);
+     $this->assertArrayHasKey(3, $responses, $transport->captured);
+     $this->assertArrayHasKey(4, $responses, $transport->captured);
+-    return [$responses[2], $responses[3], $responses[4]];
++    $this->assertArrayHasKey(5, $responses, $transport->captured);
++    $this->assertArrayHasKey(6, $responses, $transport->captured);
++    return [$responses[2], $responses[3], $responses[4], $responses[5], $responses[6]];
+   }
+ 
+ }

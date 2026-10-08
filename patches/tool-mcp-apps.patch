@@ -1,30 +1,34 @@
+diff --git a/src/Attribute/Tool.php b/src/Attribute/Tool.php
+index c6ed2a4ae032f2ec7e1466b68cc392a4b4887f13..bed894510d795f1fb3619d5114a349d036509ec3 100644
 --- a/src/Attribute/Tool.php
 +++ b/src/Attribute/Tool.php
-@@ -44,6 +44,8 @@
-    *   (optional) The deriver class.
-    * @param array<string, string|false> $forms
-    *   (optional) An array of form class names or FALSE, keyed by a string.
-+   * @param array $meta
-+   *   Transport-specific presentation metadata, separate from inputs/outputs.
+@@ -62,6 +62,8 @@ final class Tool extends Plugin {
+    *   overrides can impose additional restrictions. NULL or an empty string
+    *   means no declared permission, so the tool must override checkAccess()
+    *   to grant access. Input validation still applies in either case.
++   * @param array<string, mixed> $meta
++   *   Optional metadata, separate from input and output definitions.
     */
    public function __construct(
      public readonly string $id,
-@@ -56,6 +58,7 @@
-     public readonly ?array $output_definitions = [],
-     public readonly ?string $deriver = NULL,
+@@ -76,6 +78,7 @@ final class Tool extends Plugin {
      public readonly ?array $forms = [],
+     public readonly ?string $icon = NULL,
+     public readonly ?string $permission = NULL,
 +    public readonly array $meta = [],
    ) {}
  
    /**
+diff --git a/src/ExecutableResult.php b/src/ExecutableResult.php
+index bf87a590c7d64a7f8daccf3651807388807caee0..32af58f3cce29d2fa0ed63d85c84bb50a21d27e9 100644
 --- a/src/ExecutableResult.php
 +++ b/src/ExecutableResult.php
-@@ -29,21 +29,28 @@
+@@ -29,16 +29,26 @@ final readonly class ExecutableResult implements ToolResultInterface {
     *   Input so a caller that constructs a failure directly, without
     *   thinking about categorization, keeps the schema-attached behavior
     *   that existed before #3582993 introduced this parameter.
-+   * @param array $meta
-+   *   Presentation metadata, separate from output context values.
++   * @param array<string, mixed> $meta
++   *   Optional metadata, separate from output context values.
     */
    public function __construct(
      private bool $success,
@@ -36,28 +40,22 @@
      $this->contextValues = $contextValues ?? [];
    }
  
-   /**
--   * Indicates if the operation was successful.
--   *
--   * @return bool
--   *   TRUE if successful, FALSE otherwise.
++  /**
 +   * {@inheritdoc}
 +   */
 +  public function getMeta(): array {
 +    return $this->meta;
 +  }
 +
-+  /**
-+   * {@inheritdoc}
-    */
-   public function isSuccess(): bool {
-     return $this->success;
-@@ -83,11 +90,13 @@
+   /**
+    * Indicates if the operation was successful.
+    *
+@@ -83,11 +93,13 @@ final readonly class ExecutableResult implements ToolResultInterface {
     *   A message or description.
     * @param ?array $context_values
     *   Optional array of values keyed by context name.
-+   * @param array $meta
-+   *   Presentation metadata, separate from output context values.
++   * @param array<string, mixed> $meta
++   *   Optional metadata, separate from output context values.
     *
     * @return static
     */
@@ -68,12 +66,12 @@
    }
  
    /**
-@@ -99,11 +108,13 @@
+@@ -99,11 +111,13 @@ final readonly class ExecutableResult implements ToolResultInterface {
     *   Optional array of values keyed by context name.
     * @param \Drupal\tool\FailureCategory $category
     *   The failure category. See the constructor for the default.
-+   * @param array $meta
-+   *   Presentation metadata, separate from output context values.
++   * @param array<string, mixed> $meta
++   *   Optional metadata, separate from output context values.
     *
     * @return static
     */
@@ -84,73 +82,126 @@
    }
  
  }
+diff --git a/src/FormattedExecutableResult.php b/src/FormattedExecutableResult.php
+index 71ab136a2bd7f1da00e88b50f00099295763c746..2e47b98dd0d08f2b6f83373f8a1bd0c245bee528 100644
 --- a/src/FormattedExecutableResult.php
 +++ b/src/FormattedExecutableResult.php
-@@ -32,10 +32,14 @@
+@@ -31,6 +31,13 @@ final readonly class FormattedExecutableResult implements FormattedToolResultInt
+   ) {
    }
  
-   /**
--   * Indicates if the operation was successful.
--   *
--   * @return bool
--   *   TRUE if successful, FALSE otherwise.
++  /**
 +   * {@inheritdoc}
 +   */
 +  public function getMeta(): array {
 +    return $this->originalResult->getMeta();
 +  }
 +
-+  /**
-+   * {@inheritdoc}
-    */
-   public function isSuccess(): bool {
-     return $this->originalResult->isSuccess();
+   /**
+    * Indicates if the operation was successful.
+    *
+diff --git a/src/Tool/ToolDefinition.php b/src/Tool/ToolDefinition.php
+index bb08511947bc6e206182445a8571157ddcf4f8c8..4a98480b63caa35a2b18f5cbe5030e93c4a50369 100644
 --- a/src/Tool/ToolDefinition.php
 +++ b/src/Tool/ToolDefinition.php
-@@ -56,6 +56,26 @@
-    * @var bool
+@@ -71,6 +71,11 @@ class ToolDefinition extends PluginDefinition implements DerivablePluginDefiniti
     */
    protected bool $destructive = FALSE;
-+
+ 
 +  /**
-+   * Transport-specific definition metadata.
++   * Metadata separate from input and output definitions.
 +   */
 +  protected array $meta = [];
 +
+   /**
+    * Input definition refiners configuration for dynamic input refinement.
+    *
+@@ -141,6 +146,21 @@ class ToolDefinition extends PluginDefinition implements DerivablePluginDefiniti
+     }
+   }
+ 
 +  /**
-+   * Returns metadata without adding it to the tool input/output schema.
++   * Gets metadata separate from input and output definitions.
 +   */
 +  public function getMeta(): array {
 +    return $this->meta;
 +  }
 +
 +  /**
-+   * Sets transport-specific definition metadata.
++   * Sets metadata; an empty array clears it.
 +   */
 +  public function setMeta(array $meta): static {
 +    $this->meta = $meta;
 +    return $this;
 +  }
- 
++
    /**
-    * Input definition refiners configuration for dynamic input refinement.
+    * Gets any arbitrary property.
+    *
+diff --git a/src/ToolResultInterface.php b/src/ToolResultInterface.php
+index 845d25f783f8db24073f3f9089a74c4a92ab0028..407391d00a5c7fa631ba23e43dee4e6298e842eb 100644
 --- a/src/ToolResultInterface.php
 +++ b/src/ToolResultInterface.php
-@@ -12,6 +12,11 @@
-  * (#3582964).
+@@ -13,6 +13,11 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
   */
  interface ToolResultInterface {
-+
+ 
 +  /**
-+   * Returns presentation metadata separate from model-visible output values.
++   * Gets metadata separate from output context values.
 +   */
 +  public function getMeta(): array;
- 
++
    /**
     * Indicates if the operation was successful.
+    *
+diff --git a/tests/modules/tool_test/src/Plugin/tool/Tool/GreetingTool.php b/tests/modules/tool_test/src/Plugin/tool/Tool/GreetingTool.php
+index 50f880bcf33ec57bf5841367c15ca01234bf3593..662918bffe93fcbe6d5741c7db1c6edcaf178ba3 100644
+--- a/tests/modules/tool_test/src/Plugin/tool/Tool/GreetingTool.php
++++ b/tests/modules/tool_test/src/Plugin/tool/Tool/GreetingTool.php
+@@ -44,6 +44,7 @@ use Drupal\tool\TypedData\OutputDefinition;
+       description: new TranslatableMarkup('The generated greeting message.'),
+     ),
+   ],
++  meta: ['ui' => ['resourceUri' => 'ui://test/greeting'], 'test/custom' => 7],
+ )]
+ final class GreetingTool extends ToolBase {
+ 
+diff --git a/tests/src/Kernel/Tool/ToolDefinitionTest.php b/tests/src/Kernel/Tool/ToolDefinitionTest.php
+index a7c2692211f78e493519f9054488731596983062..8bbe3c1df0991119ece15fba1b533ba666a041c7 100644
+--- a/tests/src/Kernel/Tool/ToolDefinitionTest.php
++++ b/tests/src/Kernel/Tool/ToolDefinitionTest.php
+@@ -51,4 +51,26 @@ class ToolDefinitionTest extends KernelTestBase {
+     $this->assertNull($definition->get('does_not_exist'));
+   }
+ 
++  /**
++   * Tests attribute metadata is retained separately from typed definitions.
++   */
++  public function testMetadata(): void {
++    $definition = $this->container->get('plugin.manager.tool')->getDefinition('greeting_tool');
++    $this->assertInstanceOf(ToolDefinition::class, $definition);
++    $meta = ['ui' => ['resourceUri' => 'ui://test/greeting'], 'test/custom' => 7];
++    $this->assertSame($meta, $definition->getMeta());
++    $this->assertSame(['name', 'greeting'], array_keys($definition->getInputDefinitions()));
++    $this->assertSame(['message'], array_keys($definition->getOutputDefinitions()));
++    $this->assertSame([], (new ToolDefinition(['id' => 'plain']))->getMeta());
++
++    $derivative = clone $definition;
++    $this->assertSame($meta, $derivative->getMeta());
++    $replacement = ['test/custom' => 'replacement'];
++    $this->assertSame($derivative, $derivative->setMeta($replacement));
++    $this->assertSame($replacement, $derivative->getMeta());
++    $derivative->setMeta([]);
++    $this->assertSame([], $derivative->getMeta());
++    $this->assertSame($meta, $definition->getMeta());
++  }
++
+ }
+diff --git a/tests/src/Unit/ExecutableResultTest.php b/tests/src/Unit/ExecutableResultTest.php
+index c6ffda334c773bdd70ed759a40be6b002e31af23..70efda178cd0addabb435e4f2ec8bf39ac146b1b 100644
 --- a/tests/src/Unit/ExecutableResultTest.php
 +++ b/tests/src/Unit/ExecutableResultTest.php
-@@ -8,6 +8,7 @@
+@@ -8,6 +8,7 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  use Drupal\Tests\UnitTestCase;
  use Drupal\tool\ExecutableResult;
  use Drupal\tool\FailureCategory;
@@ -158,24 +209,41 @@
  
  /**
   * Tests the ExecutableResult value object.
-@@ -86,4 +87,20 @@
+@@ -86,4 +87,37 @@ class ExecutableResultTest extends UnitTestCase {
      $this->assertSame(FailureCategory::Runtime, $result->getFailureCategory());
    }
  
 +  /**
-+   * Metadata stays separate from outputs through result formatting.
++   * Tests metadata stays separate from outputs during result formatting.
 +   */
-+  public function testPresentationMetadata(): void {
-+    $meta = ['ui/custom' => ['image' => 'presentation-only']];
-+    $values = ['result' => 'model-visible'];
++  public function testMetadata(): void {
 +    $message = new TranslatableMarkup('Done.');
-+    $result = ExecutableResult::success($message, $values, $meta);
-+    $formatted = new FormattedExecutableResult($result, $values);
-+    $this->assertSame($meta, $result->getMeta());
-+    $this->assertSame($meta, $formatted->getMeta());
-+    $this->assertSame($values, $formatted->getContextValues());
-+    $this->assertSame([], ExecutableResult::success($message)->getMeta());
-+    $this->assertSame($meta, ExecutableResult::failure($message, meta: $meta)->getMeta());
++    $values = ['result' => 'original'];
++    $transformed = ['result' => 'formatted'];
++    $meta = ['test/presentation' => ['image' => 'preview']];
++    $results = [
++      new ExecutableResult(TRUE, $message, $values, meta: $meta),
++      ExecutableResult::success($message, $values, meta: $meta),
++      ExecutableResult::failure($message, $values, FailureCategory::Runtime, meta: $meta),
++    ];
++    foreach ($results as $result) {
++      $formatted = new FormattedExecutableResult($result, $transformed);
++      $this->assertSame($meta, $result->getMeta());
++      $this->assertSame($values, $result->getContextValues());
++      $this->assertSame($meta, $formatted->getMeta());
++      $this->assertSame($transformed, $formatted->getContextValues());
++      $this->assertSame($result->isSuccess(), $formatted->isSuccess());
++      $this->assertSame($result->getFailureCategory(), $formatted->getFailureCategory());
++    }
++    $defaults = [
++      new ExecutableResult(TRUE, $message),
++      ExecutableResult::success($message),
++      ExecutableResult::failure($message),
++    ];
++    foreach ($defaults as $result) {
++      $this->assertSame([], $result->getMeta());
++      $this->assertSame([], (new FormattedExecutableResult($result))->getMeta());
++    }
 +  }
 +
  }

@@ -1,0 +1,4 @@
+use mcp apps composer:
+  title: 'Use the MCP Apps component composer'
+  description: 'Discover installed components and render validated previews through MCP.'
+  restrict access: true

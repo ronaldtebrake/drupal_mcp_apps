@@ -1,7 +1,0 @@
-id: media_picker_save_hero
-tool_id: media_picker_save_hero
-description: null
-status: true
-dependencies:
-  module:
-    - mcp_apps

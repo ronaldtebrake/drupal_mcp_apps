@@ -1,0 +1,6 @@
+name: Unsupported object
+props:
+  type: object
+  properties:
+    attributes:
+      type: Drupal\Core\Template\Attribute
