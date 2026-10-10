@@ -1,0 +1,21 @@
+Screenshots for the Drupal MCP Apps blog post
+
+01-editorial-pulse-app-browser-preview.jpg
+Placement: Demo time.
+Caption: Editorial pulse combines Drupal-rendered metric, readership, story and activity components in the app's browser preview. The data is fictional, with a fixed 2026-10-08 snapshot and a 30-day period.
+Alt text: Editorial pulse dashboard with four metric cards, a readership chart, ranked stories and a team activity list.
+
+02-readership-drupal.jpg
+Placement: The same component in two places, first image.
+Caption: The readership SDC on a regular Drupal page, using the Mercury-generated demo theme, all sections and the last 14 days of the fictional dataset.
+Alt text: Drupal website showing the 14-day readership chart with current and previous-period lines and period filters.
+
+03-readership-app-browser-preview.jpg
+Placement: The same component in two places, second image.
+Caption: The same Drupal-rendered readership SDC in the app's browser preview, with the same theme, section and 14-day period. The app uses the original Twig template, styles and Chart.js code.
+Alt text: App browser preview showing the same readership chart beneath compact period and section controls.
+
+Capture notes
+These are real browser captures, not mockups or AI-generated images.
+The app captures use the shipped MCP App bundle through the optional local development transport. They do not show a live MCP host conversation or demonstrate the host handshake. Label them as browser previews. A manual Codex screenshot is needed for an image showing the app inside the chat.
+The website route uses the front-end theme instead of the admin theme, matching the app preview.

@@ -50,6 +50,10 @@ available for arbitrary static SDC compositions and prop editing.
 
 ## Theme comparison
 
+Publication screenshots, captions and alt text are in
+[docs/screenshots](../../docs/screenshots/CAPTIONS.txt). The app captures show
+the browser preview, not a live MCP host conversation.
+
 The app uses the site's default front-end theme, not its administration theme.
 Its native preview loads that theme's libraries, including inherited base-theme
 libraries, fonts and library overrides. The compact app controls reuse the

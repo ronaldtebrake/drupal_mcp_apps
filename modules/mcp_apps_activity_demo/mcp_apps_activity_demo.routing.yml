@@ -6,3 +6,5 @@ mcp_apps_activity_demo.website:
   requirements:
     _permission: 'use mcp apps composer'
     _user_is_logged_in: 'TRUE'
+  options:
+    _admin_route: FALSE
