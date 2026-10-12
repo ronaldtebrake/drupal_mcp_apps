@@ -1,0 +1,45 @@
+[
+    {
+        "component": "mcp_apps_commerce_demo:shop",
+        "props": {
+            "query": "",
+            "category": "grinders",
+            "budget": 150,
+            "count": 0,
+            "view": "basket",
+            "comparing": false
+        },
+        "slots": {
+            "products": [],
+            "comparison": [],
+            "summary": [],
+            "basket": [
+                {
+                    "component": "mcp_apps_commerce_demo:basket",
+                    "props": {
+                        "cart": {
+                            "id": 1,
+                            "items": [
+                                {
+                                    "id": 1,
+                                    "variation_id": 2,
+                                    "title": "Studio hand grinder · Sand",
+                                    "quantity": 1,
+                                    "unit_price": "€ 89,00",
+                                    "total": "€ 89,00"
+                                }
+                            ],
+                            "count": 1,
+                            "total": "€ 89,00",
+                            "revision": "read-only-component-preview",
+                            "state": "completed"
+                        },
+                        "can_checkout": true
+                    },
+                    "slots": []
+                }
+            ],
+            "receipt": []
+        }
+    }
+]

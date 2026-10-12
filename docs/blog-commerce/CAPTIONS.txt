@@ -1,0 +1,40 @@
+Commerce blog screenshot guide
+
+Copy blogpost.md into your blog and copy the four numbered app/website screenshots into its assets directory. The draft already contains their alt text and captions.
+
+1. 01-commerce-comparison-app-browser.jpg
+   Place after the coffee-grinder prompt, in the shopping example section.
+   Shows two grinders under €150 with their specifications expanded.
+   This is the shipped app's browser development preview, using a local Drupal transport. It is not a screenshot of the native Codex conversation.
+
+2. 02-commerce-shop-drupal.jpg
+   Place in “The same components on the website”.
+   Shows the same product components inside the Drupal theme's page wrapper.
+
+3. 03-commerce-basket-app-browser.jpg
+   Place in “From choosing a product to reviewing a basket”.
+   Shows the live Commerce basket with one €89 Graphite grinder.
+
+4. 04-commerce-review-app-browser.jpg
+   Place immediately after the basket image.
+   Shows the review dialog before placing a test order.
+
+Basket restoration
+The live basket started empty. With permission, one €89 grinder was added for screenshots 3 and 4, then removed. The empty basket was verified afterward. No order was placed or payment made for this task.
+
+Optional native Codex screenshot
+Automated capture of Codex's native window is blocked. To show the actual MCP host context, refresh the Drupal connection and ask:
+
+Help me choose a coffee grinder under €150. Show the shopping app.
+
+Wait for the interactive app, then use macOS Shift-Command-4 to capture the prompt and app together. Keep enough surrounding Codex UI to establish the host, and avoid unrelated conversation history. You can replace screenshot 1 with this image and change its caption to identify Codex. Do not label a browser preview as a Codex chat screenshot.
+
+Hero and credits
+The draft retains your existing letterpress hero and Erik Mclean/Pexels credit. That original photo is not included in this package: retain the asset already in your blog. Alternatively use screenshot 1 as the hero, update its alt text, and replace the photo attribution with an accurate screenshot credit.
+The draft retains AI disclosure and the demo illustration/OpenUI licensing details.
+
+Optional component-explorer images
+03-commerce-basket-component-preview.jpg and 04-commerce-review-component-preview.jpg show standalone SDC previews, using a read-only snapshot of an earlier simulated order. They are optional illustrations of component reuse, not screenshots of the live shopping workflow. basket-preview.openui and basket-preview-tree.json reproduce that presentation. The explorer does not wire these Commerce controls to cart or checkout tools.
+
+Publishing notes
+This draft describes the current local Commerce implementation, including uncommitted changes. Publish the corresponding code before promoting it as available from the repository. The draft links the three contribution MRs without asserting their current merge status. Check the publication date before publishing.
