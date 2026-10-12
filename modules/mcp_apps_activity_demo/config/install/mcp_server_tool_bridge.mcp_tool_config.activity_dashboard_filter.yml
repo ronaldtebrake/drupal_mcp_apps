@@ -1,7 +1,0 @@
-id: activity_dashboard_filter
-tool_id: activity_dashboard_filter
-description: null
-status: true
-dependencies:
-  module:
-    - mcp_apps_activity_demo

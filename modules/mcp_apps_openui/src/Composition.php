@@ -121,7 +121,7 @@ final class Composition {
       unset($value);
       $slots = [];
       foreach ($node['slots'] as $name => $children) {
-        $slots[$name] = $this->renderArray($children);
+        $slots[$name] = $children ? $this->renderArray($children) : '';
       }
       $build[] = ['#type' => 'component', '#component' => $node['component'], '#props' => $props, '#slots' => $slots];
     }
@@ -184,7 +184,7 @@ final class Composition {
         $this->checkSafeValue($child);
       }
     }
-    if (is_string($value) && (preg_match('/^(?:javascript|data|vbscript):/i', preg_replace('/[\x00-\x20]/', '', $value)) || $value !== Xss::filter($value))) {
+    if (is_string($value) && (preg_match('/^(?:javascript|data|vbscript):/i', preg_replace('/[\x00-\x20]/', '', $value)) || $value !== html_entity_decode(Xss::filter($value), ENT_QUOTES | ENT_HTML5, 'UTF-8'))) {
       throw new \InvalidArgumentException('Props must contain safe text and URLs.');
     }
   }

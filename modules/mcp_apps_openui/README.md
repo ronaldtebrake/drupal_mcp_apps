@@ -4,8 +4,8 @@ Compose existing Drupal Single Directory Components inside an MCP App. OpenUI
 describes the composition; Drupal renders the original Twig templates and their
 attached assets. No component templates are reimplemented in React.
 
-This is the reusable integration in this project. The Rotterdam demo, Mercury,
-Canvas authoring, and sample images are not required for ordinary SDC previews.
+This is the reusable integration in this project. Commerce and the optional
+shopping demo are not required for ordinary SDC previews.
 Install through the [project instructions](../../README.md), then enable
 `mcp_apps_openui` and grant `use mcp apps composer` to the intended authenticated
 role. Agent Access supplies the documented OAuth and MCP connection setup.
@@ -52,8 +52,8 @@ no OpenUI-specific component registration is required. Components must have
 JSON-compatible prop schemas and supported local assets.
 
 Modules can implement `hook_mcp_apps_composer_defaults_alter()` to supply an
-initial component tree when no program was provided. The optional demo uses
-this hook; its sample composition does not live in the reusable integration.
+initial component tree when no program was provided. Demo compositions belong
+in their own modules.
 See [mcp_apps_openui.api.php](mcp_apps_openui.api.php).
 
 The base `mcp_apps` module currently supplies `AppResourceBuilder` and the
@@ -70,7 +70,7 @@ PHP SDK. These helpers can move with OpenUI if it becomes a separate project.
   private files are rejected. Full-page wrappers and Drupal forms are outside
   this preview adapter.
 - Media references require accessible public image Media and the Canvas image
-  prop schema. The optional demo supplies the picker tool and thumbnails.
+  prop schema. This integration does not supply a Media picker.
 - Sessions belong to the authenticated account and expire after one hour.
   Calls are queued because Drupal's HTTP MCP transport locks each session.
 

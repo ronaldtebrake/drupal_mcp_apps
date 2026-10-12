@@ -1,0 +1,4 @@
+deny demo price:
+  title: 'Deny demo price access for tests'
+deny demo quantity:
+  title: 'Deny demo quantity edits for tests'

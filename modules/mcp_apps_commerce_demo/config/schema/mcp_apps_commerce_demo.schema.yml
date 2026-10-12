@@ -1,0 +1,11 @@
+mcp_apps_commerce_demo.settings:
+  type: config_object
+  label: 'Commerce showcase'
+  mapping:
+    store_uuid:
+      type: string
+      label: 'Dedicated demo store UUID'
+
+commerce_payment.commerce_payment_gateway.plugin.mcp_apps_demo:
+  type: commerce_payment.commerce_payment_gateway.plugin.manual
+  label: 'Simulated manual payment'

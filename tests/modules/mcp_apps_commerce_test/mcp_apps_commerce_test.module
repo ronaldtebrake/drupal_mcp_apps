@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Field-access fixtures for Commerce permission tests.
+ */
+
+use Drupal\Core\Access\AccessResult;
+
+/**
+ * Implements hook_entity_field_access().
+ */
+function mcp_apps_commerce_test_entity_field_access($operation, $field_definition, $account, $items = NULL) {
+  if ($operation === 'view' && $field_definition->getName() === 'price' && $account->hasPermission('deny demo price')) {
+    return AccessResult::forbidden()->cachePerPermissions();
+  }
+  if ($operation === 'edit' && $field_definition->getName() === 'quantity' && $account->hasPermission('deny demo quantity')) {
+    return AccessResult::forbidden()->cachePerPermissions();
+  }
+  return AccessResult::neutral();
+}

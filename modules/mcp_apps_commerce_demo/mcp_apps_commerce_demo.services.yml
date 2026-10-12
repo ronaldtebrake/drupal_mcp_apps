@@ -1,0 +1,10 @@
+services:
+  mcp_apps_commerce_demo.store:
+    class: Drupal\mcp_apps_commerce_demo\Store
+    arguments: ['@entity_type.manager', '@current_user', '@commerce_cart.cart_provider', '@commerce_cart.cart_manager', '@commerce_price.chain_price_resolver', '@commerce_price.currency_formatter', '@commerce_order.availability_manager', '@commerce_order.order_refresh', '@database', '@lock', '@config.factory', '@extension.list.module']
+  mcp_apps_commerce_demo.shop:
+    class: Drupal\mcp_apps_commerce_demo\Shop
+    arguments: ['@plugin.manager.tool', '@mcp_apps_openui.composer', '@mcp_apps_openui.sessions', '@config.factory']
+  mcp_apps_commerce_demo.seed:
+    class: Drupal\mcp_apps_commerce_demo\DemoSeed
+    arguments: ['@entity_type.manager', '@commerce_price.currency_importer', '@config.factory']

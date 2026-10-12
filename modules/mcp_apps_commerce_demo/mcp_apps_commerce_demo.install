@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Registers the optional Commerce app resource.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function mcp_apps_commerce_demo_install(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  $plugins['mcp_apps_commerce'] = ['id' => 'mcp_apps_commerce', 'enabled' => TRUE, 'configuration' => []];
+  $config->set('plugins', $plugins)->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mcp_apps_commerce_demo_uninstall(): void {
+  $config = \Drupal::configFactory()->getEditable('mcp_server.resource_providers');
+  $plugins = $config->get('plugins') ?? [];
+  unset($plugins['mcp_apps_commerce']);
+  $config->set('plugins', $plugins)->save();
+}

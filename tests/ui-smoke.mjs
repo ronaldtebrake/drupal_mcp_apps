@@ -56,8 +56,6 @@ const dom = new JSDOM(await readFile(new URL('../modules/mcp_apps_openui/dist/co
         } else if (request.params.name.endsWith('component_composer_asset')) {
           const bytes = Buffer.from(fixture.bytes[args.asset_id], 'base64').subarray(args.offset, args.offset + 196608);
           result = { structuredContent: { data: { bytes: bytes.length } }, _meta: { ui: { base64: bytes.toString('base64') } } };
-        } else if (request.params.name.endsWith('composer_media_search')) {
-          result = { structuredContent: { data: fixture.media.data }, _meta: { ui: fixture.media.ui } };
         } else throw new Error('Unexpected tool: ' + request.params.name);
         setTimeout(() => {
           activeCalls--;
@@ -73,20 +71,15 @@ try {
   const frame = document.querySelector('iframe');
   assert.equal(frame.getAttribute('sandbox'), 'allow-scripts');
   assert(frame.getAttribute('srcdoc').includes('data:text/css;base64,'));
-  assert(frame.getAttribute('srcdoc').includes('data:image/jpeg;base64,'));
+  assert(frame.getAttribute('srcdoc').includes('data:image/svg+xml;base64,'));
   assert.equal(document.querySelectorAll('.component-row').length, flatten(fixture.boot.ui.tree).length);
   assert(requests.some((request) => request.method === 'ui/initialize'));
   assert(requests.some((request) => request.method === 'ui/update-model-context'));
   [...document.querySelectorAll('button')].find((button) => button.textContent === 'Mobile').click();
   await waitFor(() => document.querySelector('.preview-stage.mobile'), 'mobile width');
-  document.querySelector('.image-choice').click();
-  await waitFor(() => document.querySelectorAll('.image-grid button').length, 'Media selector');
-  assert([...document.querySelectorAll('.image-grid img')].every((image) => image.src.startsWith('data:image/')));
-  document.querySelector('.image-grid button').click();
-  await waitFor(() => !document.querySelector('.media-dialog'), 'image selection');
   const previous = frame.getAttribute('srcdoc');
   rejectPreview = true;
-  const changed = updateProp(fixture.boot.ui.tree, [0], 'heading_text', 'A different heading');
+  const changed = updateProp(fixture.boot.ui.tree, [0], 'query', 'Coffee');
   [...document.querySelectorAll('button')].find((button) => button.textContent === 'OpenUI source').click();
   await waitFor(() => document.querySelector('.source-dialog textarea'), 'source editor');
   const textarea = document.querySelector('.source-dialog textarea');
@@ -96,8 +89,8 @@ try {
   [...document.querySelectorAll('button')].find((button) => button.textContent === 'Preview composition').click();
   await waitFor(() => document.querySelector('[role="alert"]')?.textContent.includes('Rejected composition'), 'failed server preview');
   assert.equal(frame.getAttribute('srcdoc'), previous, 'Keep the last valid preview on errors.');
-  assert(requests.filter((request) => request.method === 'tools/call').every((request) => /component_composer_(preview|asset)$|composer_media_search$/.test(request.params.name)));
+  assert(requests.filter((request) => request.method === 'tools/call').every((request) => /component_composer_(preview|asset)$/.test(request.params.name)));
   assert.equal(errors.length, 0, errors.map((error) => error.message).join('\n'));
   assert.equal(maximumActiveCalls, 1, 'Tool calls must share the MCP session sequentially.');
-  console.log('PASS: official OpenUI parser, SDK handshake, serialized calls and error recovery, local assets, nested components, widths, Media selection and last-valid-preview behavior.');
+  console.log('PASS: official OpenUI parser, SDK handshake, serialized calls and error recovery, local assets, nested components, widths and last-valid-preview behavior.');
 } finally { dom.window.close(); }

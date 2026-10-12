@@ -1,0 +1,107 @@
+name: 'Commerce product'
+description: 'Shared native Drupal product component for the website and MCP App.'
+status: experimental
+props:
+  type: object
+  required:
+    - product
+    - compared
+    - cart
+  properties:
+    product:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - category
+        - variants
+        - specs
+        - image
+        - url
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        variants:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - label
+              - price
+              - number
+              - available
+            properties:
+              id:
+                type: integer
+              label:
+                type: string
+              price:
+                type: string
+              number:
+                type: string
+              available:
+                type: boolean
+        specs:
+          type: array
+          items:
+            type: object
+            required:
+              - label
+              - value
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+        image:
+          type: string
+        url:
+          type: string
+    compared:
+      type: boolean
+    show_details:
+      type: boolean
+    can_compare:
+      type: boolean
+    cart:
+      type: object
+      properties:
+        id:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              variation_id:
+                type: integer
+              title:
+                type: string
+              quantity:
+                type: integer
+              unit_price:
+                type: string
+              total:
+                type: string
+        count:
+          type: integer
+        total:
+          type: string
+        revision:
+          type: string
+        state:
+          type: string
+libraryOverrides:
+  dependencies:
+    - mcp_apps_commerce_demo/design
+    - mcp_apps_commerce_demo/components

@@ -1,0 +1,72 @@
+name: 'Commerce comparison'
+description: 'Shared native Drupal comparison component for the website and MCP App.'
+status: experimental
+props:
+  type: object
+  required:
+    - products
+  properties:
+    products:
+      type: array
+      maxItems: 3
+      items:
+        type: object
+        required:
+          - id
+          - title
+          - description
+          - category
+          - variants
+          - specs
+          - image
+          - url
+        properties:
+          id:
+            type: integer
+          title:
+            type: string
+          description:
+            type: string
+          category:
+            type: string
+          variants:
+            type: array
+            items:
+              type: object
+              required:
+                - id
+                - label
+                - price
+                - number
+                - available
+              properties:
+                id:
+                  type: integer
+                label:
+                  type: string
+                price:
+                  type: string
+                number:
+                  type: string
+                available:
+                  type: boolean
+          specs:
+            type: array
+            items:
+              type: object
+              required:
+                - label
+                - value
+              properties:
+                label:
+                  type: string
+                value:
+                  type: string
+          image:
+            type: string
+          url:
+            type: string
+libraryOverrides:
+  dependencies:
+    - mcp_apps_commerce_demo/design
+    - mcp_apps_commerce_demo/components

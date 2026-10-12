@@ -1,0 +1,5 @@
+use mcp apps commerce demo:
+  title: 'Use MCP Apps Commerce demo'
+place mcp apps demo orders:
+  title: 'Place MCP Apps test orders'
+  description: 'Complete orders in the dedicated demo store with simulated payment only.'

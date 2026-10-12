@@ -1,0 +1,27 @@
+name: 'Commerce receipt'
+description: 'Shared native Drupal receipt component for the website and MCP App.'
+status: experimental
+props:
+  type: object
+  required:
+    - receipt
+  properties:
+    receipt:
+      type: object
+      properties:
+        order_id:
+          type: integer
+        number:
+          type: string
+        total:
+          type: string
+        state:
+          type: string
+        payment:
+          type: string
+        url:
+          type: string
+libraryOverrides:
+  dependencies:
+    - mcp_apps_commerce_demo/design
+    - mcp_apps_commerce_demo/components

@@ -1,0 +1,45 @@
+name: 'Commerce basket'
+description: 'Shared native Drupal basket component for the website and MCP App.'
+status: experimental
+props:
+  type: object
+  required:
+    - cart
+    - can_checkout
+  properties:
+    cart:
+      type: object
+      properties:
+        id:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              variation_id:
+                type: integer
+              title:
+                type: string
+              quantity:
+                type: integer
+              unit_price:
+                type: string
+              total:
+                type: string
+        count:
+          type: integer
+        total:
+          type: string
+        revision:
+          type: string
+        state:
+          type: string
+    can_checkout:
+      type: boolean
+libraryOverrides:
+  dependencies:
+    - mcp_apps_commerce_demo/design
+    - mcp_apps_commerce_demo/components

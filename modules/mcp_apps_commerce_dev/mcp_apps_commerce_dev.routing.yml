@@ -1,0 +1,16 @@
+mcp_apps_commerce_dev.app:
+  path: '/shop/app'
+  defaults:
+    _controller: '\Drupal\mcp_apps_commerce_demo\Controller\ShopController::app'
+  requirements:
+    _permission: 'use mcp apps commerce demo+use mcp apps composer'
+    _user_is_logged_in: 'TRUE'
+mcp_apps_commerce_dev.call:
+  path: '/shop/app/call'
+  defaults:
+    _controller: '\Drupal\mcp_apps_commerce_demo\Controller\ShopController::call'
+  methods: [POST]
+  requirements:
+    _permission: 'use mcp apps commerce demo+use mcp apps composer'
+    _user_is_logged_in: 'TRUE'
+    _csrf_request_header_token: 'TRUE'

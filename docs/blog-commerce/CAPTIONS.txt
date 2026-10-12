@@ -9,7 +9,7 @@ Copy blogpost.md into your blog and copy the four numbered app/website screensho
 
 2. 02-commerce-shop-drupal.jpg
    Place in “The same components on the website”.
-   Shows the same product components inside the Drupal theme's page wrapper.
+   Shows the same product components inside the dedicated Drupal storefront wrapper, with larger typography and collection navigation.
 
 3. 03-commerce-basket-app-browser.jpg
    Place in “From choosing a product to reviewing a basket”.

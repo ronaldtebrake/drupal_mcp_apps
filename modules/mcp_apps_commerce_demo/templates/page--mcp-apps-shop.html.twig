@@ -1,0 +1,28 @@
+{# Website wrapper. The catalog and basket remain the shared Drupal SDCs. #}
+{{ attach_library('mcp_apps_commerce_demo/storefront') }}
+<div class="fieldwork-storefront">
+  <header class="storefront-header">
+    <a class="storefront-brand" href="{{ path('mcp_apps_commerce_demo.shop') }}" aria-label="Fieldwork Supply home">fieldwork<span>SUPPLY</span></a>
+    <nav aria-label="Shop collections">
+      <a href="{{ path('mcp_apps_commerce_demo.shop') }}">All coffee gear</a>
+      <a href="{{ path('mcp_apps_commerce_demo.shop', {}, {'query': {'category': 'grinders'}}) }}">Grinders</a>
+      <a href="{{ path('mcp_apps_commerce_demo.shop', {}, {'query': {'category': 'brewing'}}) }}">Brewing</a>
+      <a href="{{ path('mcp_apps_commerce_demo.shop', {}, {'query': {'category': 'accessories'}}) }}">Accessories</a>
+    </nav>
+    <span class="storefront-header-note">Coffee gear, thoughtfully chosen.</span>
+  </header>
+  {{ page.highlighted }}
+  <main id="main-content" class="storefront-main" tabindex="-1">
+    <div class="storefront-intro">
+      <p class="storefront-kicker">THE COFFEE COLLECTION</p>
+      <h1>Make room for a better morning.</h1>
+      <p>Good tools. Small rituals. Find the coffee gear that feels right for you.</p>
+    </div>
+    {{ storefront_content }}
+  </main>
+  <footer class="storefront-footer">
+    <span>fieldwork supply</span>
+    <p>A Drupal Commerce showcase. Checkout creates test orders only.</p>
+    <a href="{{ front_page }}">Back to the site ↗</a>
+  </footer>
+</div>

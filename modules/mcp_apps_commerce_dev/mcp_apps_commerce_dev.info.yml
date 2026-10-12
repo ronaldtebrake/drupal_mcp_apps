@@ -1,0 +1,7 @@
+name: MCP Apps Commerce browser development
+type: module
+description: 'Optional browser transport for local shopping-app tests.'
+package: MCP
+core_version_requirement: ^11.4
+dependencies:
+  - mcp_apps:mcp_apps_commerce_demo

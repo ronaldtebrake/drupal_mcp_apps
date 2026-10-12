@@ -2,32 +2,22 @@
 
 /**
  * @file
- * Exercises the read-only composer against a bootstrapped Drupal site.
+ * Generates a generic native SDC fixture using the optional Commerce demo.
  */
 
-$account = \Drupal::entityTypeManager()->getStorage('user')->load(1);
-\Drupal::service('account_switcher')->switchTo($account);
+\Drupal::service('account_switcher')->switchTo(\Drupal\user\Entity\User::load(1));
 try {
-  $composer = \Drupal::service('mcp_apps_openui.composer');
-  $opened = $composer->open('A weekend in Rotterdam', getenv('MCP_APPS_PREVIEW_THEME') ?: '', '');
+  $opened = \Drupal::service('mcp_apps_commerce_demo.shop')->open('', 'grinders', 150);
   $id = $opened['data']['session_id'];
-  $preview = $composer->preview($id, $opened['ui']['tree']);
+  $opened['ui']['catalog'] = \Drupal::service('mcp_apps_openui.catalog')->list('mcp_apps_commerce_demo');
+  $opened['ui']['initial_component'] = 'mcp_apps_commerce_demo:shop';
+  $preview = \Drupal::service('mcp_apps_openui.composer')->preview($id, $opened['ui']['tree']);
   $assets = \Drupal::service('mcp_apps_openui.sessions')->get($id)['assets'];
-  $media = \Drupal::service('mcp_apps_demo.media')->search('Rotterdam');
   file_put_contents(getenv('MCP_APPS_UI_FIXTURE') ?: '/tmp/mcp-composer-fixture.json', json_encode([
-    'boot' => $opened,
-    'preview' => $preview,
-    'media' => $media,
+    'boot' => $opened, 'preview' => $preview,
     'bytes' => array_map(static fn($asset) => base64_encode($asset['bytes']), $assets),
   ], JSON_THROW_ON_ERROR));
-  print json_encode([
-    'session' => $id,
-    'nodes' => count($preview['ui']['tree']),
-    'html_bytes' => strlen($preview['ui']['html']),
-    'assets' => count($preview['ui']['assets']),
-    'preview_theme' => $opened['ui']['theme'],
-    'theme' => \Drupal::config('system.theme')->get('default'),
-  ]) . PHP_EOL;
+  print json_encode(['components' => count($opened['ui']['catalog']), 'assets' => count($assets)]) . PHP_EOL;
 }
 finally {
   \Drupal::service('account_switcher')->switchBack();

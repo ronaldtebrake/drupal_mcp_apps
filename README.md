@@ -1,32 +1,33 @@
-# OpenUI component previews for Drupal MCP Apps
+# Drupal components in a Commerce MCP App
 
-**AI disclosure:** OpenAI Codex assisted with this module, its tests, documentation, and contrib patches. This is a proof of concept; the proposed upstream APIs have not all been merged.
+**AI disclosure:** OpenAI Codex assisted with the module, illustrations, tests, documentation and contrib patches. This is a proof of concept; the upstream APIs are still supplied through pinned contributions where needed.
 
-Build an interactive MCP App from components that already exist in Drupal. The optional OpenUI integration uses the official OpenUI parser and React renderer for composition and editing controls. Drupal validates the component tree and renders its original SDC Twig templates and attached assets. There are no React copies of those templates.
+Fieldwork Supply is a small coffee-gear shop powered by real Drupal Commerce products, variations, prices, carts, orders and simulated payments. The same Drupal SDCs render the shop on the website and inside an MCP App. OpenUI describes the composition; Drupal renders the original Twig templates, CSS, JavaScript and artwork.
 
-The Rotterdam showcase is **preview only**: change text, select accessible Drupal Media, inspect OpenUI source, and compare desktop/mobile widths. It creates no pages and saves no content.
+Ask:
 
-Tools and components remain reusable: Tool API supplies data and operations, while SDCs supply their schemas, Twig templates, and assets. The optional **Editorial pulse** dashboard demonstrates both: the same data tool and chart/activity components power a Drupal page and an MCP App. Neither showcase implements a Canvas authoring workflow.
+> Help me choose a coffee grinder under €150. Show the shopping app.
+
+The compact catalog shows filters and product cards. Compare products, choose a finish and add an item. A small basket summary shows its count and total; **Proceed** opens the separate basket component. **Back to products** preserves your filters and comparison. Review the total and place a **test order inside the app**. No real money is charged, no receipt email is sent, and no delivery or fulfilment is initiated.
 
 ## Modules
 
 | Module | Responsibility |
 | --- | --- |
-| `mcp_apps` | Module-owned HTML resources, SDK MIME metadata, Drupal cacheability, and a reusable JavaScript host helper |
-| `mcp_apps_openui` | Official OpenUI integration, SDC discovery/validation, native rendering, and account-bound preview sessions |
-| `mcp_apps_demo` | Optional Rotterdam composition, credited sample images, and Media selection |
-| `mcp_apps_activity_demo` | Optional editorial dashboard, fictional story/activity data, and reusable chart SDCs |
-| `mcp_apps_activity_dev` | Optional local browser test routes; not required by the MCP App |
+| `mcp_apps` | Module-owned app resources, SDK metadata and a JavaScript host helper |
+| `mcp_apps_openui` | OpenUI parsing, SDC discovery and validation, native rendering and account-owned preview sessions |
+| `mcp_apps_commerce_demo` | Optional Commerce tools, shared shopping SDCs, explicit catalog seeding and simulated checkout |
+| `mcp_apps_commerce_dev` | Optional browser app preview for development; unnecessary for MCP hosting |
 
-The foundation has no rendering dependency on OpenUI or Canvas. The OpenUI integration works with ordinary core SDCs without Canvas. The showcase uses a Mercury-generated theme: Mercury's existing image template and schema require Canvas and CVA. Canvas authoring, Canvas Tools, and publishing are outside this demo.
+The foundation and OpenUI integration do not depend on Commerce or Canvas. The OpenUI integration is the intended reusable contribution. Shopping code lives in the optional demo.
 
-**The OpenUI integration is the intended community contribution.** The base module is a small packaging dependency for its resource builder and host helper; it does not implement the MCP Apps protocol. The demo is optional and is not needed to render your own SDCs. See [the OpenUI developer guide](modules/mcp_apps_openui/README.md) for the rendering flow and extension points.
+The previous Rotterdam and Editorial pulse showcases have been retired. Existing seeded content and files are preserved. Historical screenshots in `docs/screenshots` describe the earlier showcase, not the current Commerce interface.
 
 ## Install on top of Agent Access
 
-Start with an installed Drupal **11.4+** site and PHP **8.3+**. Apply and configure the [Agent Access recipe](https://www.drupal.org/project/agent_access), following its documentation for OAuth signing keys, clients, scopes, and an HTTPS MCP connection. Agent Access is the recommended installation foundation; this project adds app resources and optional component previews.
+Start with Drupal **11.4+** and PHP **8.3+**. Apply and configure the [Agent Access recipe](https://www.drupal.org/project/agent_access), following its documentation for OAuth signing keys, clients, scopes and an HTTPS MCP connection.
 
-Run these commands from the site's Composer root:
+From your site's Composer root:
 
 ```sh
 composer config repositories.mcp_apps vcs https://github.com/ronaldtebrake/drupal_mcp_apps.git
@@ -40,157 +41,88 @@ composer require drupal/mcp_apps:dev-main drush/drush:^13 \
   --with-all-dependencies
 composer patches-relock
 composer patches-repatch
-vendor/bin/drush en mcp_apps -y
+vendor/bin/drush en mcp_apps_openui -y
 vendor/bin/drush updb -y
 ```
 
-Composer Patches discovers the three checksum-pinned MR diffs from this package's `extra.patches`. Commit the site's Composer files and `patches.lock.json`. If an MR changes, review it and deliberately update its checksum. The `patches/` directory contains reviewable snapshots. No patch helper script is required.
+Composer Patches discovers the checksum-pinned MR diffs in this package's `extra.patches`. Commit your site's Composer files and `patches.lock.json`. The `patches/` directory retains reviewable snapshots. No helper script is required.
 
-Until the contributions have releases, the three patch base commits must also be required in the root project: Composer ignores commit references declared only by dependencies. Requiring just this module can select newer branch commits on which the patches no longer apply.
+Require the patch base commits in the root project until compatible releases are available: Composer ignores commit references declared only by dependencies. Review changed MRs before deliberately updating their checksums.
 
-### Add the OpenUI integration
+To replace an existing showcase installation, uninstall `mcp_apps_activity_dev`, `mcp_apps_activity_demo` and `mcp_apps_demo` **before updating the code**. This removes their registration and configuration without deleting imported content or files.
+
+## Enable the Commerce showcase
+
+Composer does not infer optional dependencies from enabled submodules. Install Commerce explicitly; this demo was tested with **Commerce 3.3.10**:
 
 ```sh
-vendor/bin/drush en mcp_apps_openui -y
+composer require drupal/commerce:^3.3
+vendor/bin/drush en mcp_apps_commerce_demo -y
+vendor/bin/drush php:script web/modules/contrib/mcp_apps/modules/mcp_apps_commerce_demo/scripts/seed_demo.php
 vendor/bin/drush cr
 ```
 
-Grant **Use MCP Apps composer** to the intended role, alongside Agent Access's MCP endpoint permissions. For Media selection, also grant **View media** and **View published content** (`access content`). Configure an OAuth scope carrying that role through Agent Access's documented setup. An OAuth login alone does not grant module permissions.
+Adapt `web/` and the module path to your site's layout. Seeding is explicit and repeatable: it creates a dedicated EUR demo store, six products, their variations, a separate order type and a test-only payment gateway. It preserves existing products, other stores and the default store.
 
-Connect an MCP Apps host to `https://YOUR-DRUPAL-HOST/mcp`. Refresh its tool catalog after enabling submodules. Use `tool_api__sdc_component_catalog` to discover a module/theme's components, then `tool_api__component_composer_open` with an OpenUI `program` and an installed `theme`.
+Grant the intended authenticated role:
 
-### Add the optional showcase
+- **Use MCP Apps composer**
+- **Use MCP Apps Commerce demo**
+- **View products** (`view commerce_product`)
+- **View own orders** (`view own commerce_order`) for order-page handoff
+- **Place MCP Apps test orders** only when that role should complete simulated checkout
 
-Composer does not infer optional dependencies from enabled submodules. Install them explicitly. The current showcase was tested with Mercury **1.0.5** and Canvas **1.11.0**:
+Configure an OAuth scope carrying the role through Agent Access. OAuth authentication alone does not grant these permissions. The module does not grant them automatically.
 
-```sh
-composer require drupal/mercury:1.0.5 drupal/canvas:1.11.0 drupal/cva:^1.0
-cd web
-../vendor/bin/dr generate-theme mcp_apps_demo_theme --name='MCP Apps demo' --starterkit=mercury --path=themes/custom
-cd ..
-vendor/bin/drush theme:enable mcp_apps_demo_theme
-vendor/bin/drush en mcp_apps_demo -y
-vendor/bin/drush php:script web/modules/contrib/mcp_apps/modules/mcp_apps_demo/scripts/seed_demo.php
-vendor/bin/drush cr
-```
+Connect your MCP Apps host to `https://YOUR-DRUPAL-HOST/mcp` and refresh its tool catalog. Use `tool_api__commerce_shop_open`; its optional inputs are `query`, `category` (`all`, `grinders`, `brewing`, `accessories`) and `budget` in EUR. Zero means no budget limit. Set `mode: choose` for requests such as “help me choose the best grinder”: matching products show their specifications immediately, without comparison checkboxes or a duplicate comparison panel. `browse` keeps manual comparison available; `auto` (the default) shows specifications immediately when there are two or three matches. The model chooses the mode; Drupal validates it and renders the same components.
 
-Theme generation requires Drupal core's starterkit dependencies: install `drupal/core-dev` matching your site's core version if they are not already available. Adapt `web/` and the module path to your site's layout. The preview theme is enabled without changing the site's default theme.
+The ordinary website is `/shop`. It uses the same component tree, Twig templates and component JavaScript. The authenticated user's basket is shared with the MCP App.
 
-The explicit, repeatable seed imports six image Media entities and creates a dedicated Image media type if needed. It uses UUID tracking to avoid duplicates. It does not create articles, OAuth scopes, roles, or grant permissions. Existing content and files are preserved when upgrading from the hero demo; its tools and presentation overrides are retired by the update hook (`drush updb`).
-
-### Compare Mercury and Byte components
-
-For an optional component comparison, install and enable Byte alongside the
-Mercury-generated demo theme. Tested with Byte theme **1.0.3**:
+For local browser QA only:
 
 ```sh
-composer require drupal/byte_theme:1.0.3
-vendor/bin/drush theme:enable byte_theme
-vendor/bin/drush cr
+vendor/bin/drush en mcp_apps_commerce_dev -y
 ```
 
-This uses Byte's SDCs for isolated previews. It does not apply the full Byte
-site recipe or change the default theme. Byte's maintainers recommend the
-[complete Byte template](https://www.drupal.org/project/byte) for a complete
-website and discourage using its theme as a base theme.
+Open `/shop/app?category=grinders&budget=150`. This uses the shipped app bundle with a local CSRF-protected transport. It does not verify the MCP host handshake. Neither development route is necessary for the MCP App.
 
-Ask the agent to use `mcp_apps_demo_theme` for Mercury or `byte_theme` for Byte.
-Pass the same value as `provider` to `sdc_component_catalog` and as `theme` to
-`component_composer_open`. Omitting `program` opens the same Rotterdam sample
-adapted to that theme's actual schemas. Byte uses Section's columns for the
-highlights; Mercury uses its separate Grid component. Templates and styles
-remain owned by their respective themes.
+## Reuse and rendering
 
-For browser comparison, open `/admin/content/mcp-apps/composer?theme=byte_theme`
-and `/admin/content/mcp-apps/composer?theme=mcp_apps_demo_theme` in separate tabs.
+`commerce_demo_catalog`, `commerce_demo_cart`, `commerce_demo_cart_update` and `commerce_demo_checkout` are Tool API operations. The shop orchestrator calls those tools with validation and access checks; it does not bypass them to mutate entities.
 
-### Add the activity dashboard
+Those adapters delegate to Commerce's price resolvers, availability checkers, Cart Provider, Cart Manager, order refresh, state-machine transition and payment gateway APIs. They are not a general replacement for Commerce checkout.
 
-After enabling `mcp_apps_openui`, enable the independent activity showcase:
+The shared SDCs are `shop`, `product`, `comparison`, `basket_summary`, `basket` and `receipt`. Discover them through `sdc_component_catalog` with provider `mcp_apps_commerce_demo`. They can also be composed independently with `Page([DrupalComponent(id, props, namedSlots)])`. `Page` is a composition container, not a saved Drupal page.
 
-```sh
-vendor/bin/drush en mcp_apps_activity_demo -y
-vendor/bin/drush cr
-```
+OpenUI uses its official parser and React renderer for the composition wrapper. Drupal renders the actual components. The component JavaScript supplies variation selection, comparison, quantity controls and order review on both surfaces. In the app, actions pass through the host's existing MCP connection. No further model call is required for each interaction.
 
-No extra Composer packages, theme generation, content imports, or Canvas/Media
-modules are required. Chart.js is bundled locally with its MIT notice. The
-dataset contains eight fictional Rotterdam stories, fictional editorial
-activity, and a fixed 60-day readership sample. It does not read real analytics
-or create content entities.
+The app resource is `ui://drupal/commerce-shop`, with MIME type `text/html;profile=mcp-app`. HTML and asset bytes travel in app presentation metadata, outside model-visible structured results. Attached files are restricted to installed extensions and access-checked Media, bounded by size and count. The native preview uses an opaque-origin sandbox with a CSP blocking network requests.
 
-Refresh the MCP connection, then ask:
+## Checkout boundaries
 
-> Show the Editorial pulse dashboard for the last 30 days in the MCP App.
+The demo uses a separate order type and store. Cart and checkout operations require the authenticated owner, even for administrators. Products and variations must be published and accessible; field access and Commerce availability are checked.
 
-`tool_api__activity_dashboard_open` opens the app. Its day-range and section
-filters call an app-only tool, which invokes `editorial_activity` through Tool
-API and maps the report into ordinary SDC props. The data tool is also available
-independently as `tool_api__editorial_activity`, without app metadata.
+Quantity writes use absolute quantities, customer-scoped locks and database transactions. Checkout recalculates prices, requires the server-issued reviewed basket revision, and rejects changed totals. It records payment through a dedicated gateway that only supports **test mode**, then uses Commerce's order-placement transition. Failed operations roll back; repeated successful checkout returns the same order instead of recording another payment.
 
-Individual components also have filterable views. Ask for **Readership over
-time** or **Stories making an impact** with a period; the agent passes
-`view: readership` or `view: stories` to `activity_dashboard_open`. Period and
-section changes preserve the selected component, using the same Tool API report
-and native SDCs as the dashboard. `activity` and `metrics` are also available.
+This is a deliberately limited simulated checkout: no address collection, shipping, external payment processor, real inventory fulfilment or production checkout-pane integration. A real storefront integration should use Commerce's configured checkout and gateway behaviour.
 
-Choose 7, 14, or 30 days, or **Custom period** and enter any whole number from
-1 to 30, then press **Apply**. The 60-day sample supports an equally long
-previous-period comparison for every selection. The tools accept the same open
-range; for example, ask for readership over the last 14 days.
+Preview sessions expire after one hour and belong to the authenticated account. A failed render keeps the last successful app view. General SDC previews support static JSON-compatible props and local assets; arbitrary OpenUI state, Query/Mutation expressions, remote assets and PHP-object props remain unsupported.
 
-Compare the MCP App with `/admin/content/mcp-apps/activity`, a normal Drupal
-render array using the same composition, Twig templates, CSS, and Chart.js.
-The dashboard follows the site's default front-end theme, including its fonts
-and design tokens. Switch between Byte and Mercury in Appearance, then press
-Refresh in the app to compare the same components and data in either theme.
-Chart style, accessible tables, and story drilldowns work inside the native
-components without model calls.
-
-For local browser testing without an MCP host, optionally enable
-`mcp_apps_activity_dev` and open `/admin/content/mcp-apps/activity/app`.
-That module owns the browser app and CSRF-protected transport routes. Neither
-route is needed by the MCP App. See [the activity demo guide](modules/mcp_apps_activity_demo/README.md).
-
-## Try the landing-page demo
-
-Ask:
-
-> What would a Rotterdam weekend landing page with a hero, three highlights, and a call to action, using components from mcp_apps_demo_theme look like? Display it in the MCP App.
-
-The agent can retrieve `tool_api__sdc_component_catalog` with provider `mcp_apps_demo_theme`, generate a static OpenUI composition, and pass it to `tool_api__component_composer_open`. Calling the open tool without a program loads the optional Rotterdam sample.
-
-OpenUI uses `Page([DrupalComponent(componentId, props, namedSlots)])`. Props are JSON objects; named slots contain ordered `DrupalComponent` lists. Image props in the showcase accept `{media_id: ID}`. Arbitrary JavaScript, OpenUI state, Query, and Mutation expressions are rejected in this first adapter. The actual OpenUI parser performs parsing; PHP receives the resulting plain tree.
-
-`Page` is an OpenUI composition container, not a Drupal or Canvas page entity.
-
-The HTML resource is `ui://drupal/component-composer`, served as `text/html;profile=mcp-app`. The host initializes the official MCP Apps SDK, forwards tool-result `_meta`, and mediates preview, asset, and Media calls. A host supporting only ordinary MCP tools receives structured results, without an interactive app.
-
-For browser development, `/admin/content/mcp-apps/composer` runs the same bundle with a permission-checked, CSRF-protected Drupal transport. It is separate from verification of the MCP host handshake.
-
-## Rendering and access boundaries
-
-Drupal is authoritative for props, enum/required constraints, component discovery, and Media/field/file access. PHP-object schemas and unresolved references are reported as unsupported. Unknown components, render-array props, unsafe URLs, inaccessible Media, and private image files are rejected.
-
-Preview assets are limited to installed extension assets and access-checked Media referenced by the composition. Hash-addressed, bounded chunks travel through app-only tools in presentation metadata. HTML and image bytes stay outside model-visible structured outputs. The preview runs in an opaque-origin sandbox with a CSP that blocks network requests. A failed composition leaves the last valid preview visible.
-
-Resources default to max-age zero. Account-specific resources must remain uncached for now: the pinned MCP Server implementation does not correctly resolve cached resource variation pointers across accounts. Preview sessions expire after one hour and are bound to the authenticated account.
-
-This first adapter supports static, JSON-compatible SDC compositions and local attached CSS, JavaScript, fonts, and images. External assets, private files, PHP-object props, and OpenUI Query/Mutation/state expressions are unsupported. It is a component preview, not a complete themed Drupal page or form renderer. The optional Media adapter recognizes Canvas's image schema; other image-prop formats need an adapter. The activity demo explicitly maps a Tool API report to component props; automatic binding of arbitrary tools to components is not implemented.
-
-## Contrib dependencies
+## Contrib integration
 
 | Project | Contribution |
 | --- | --- |
-| [MCP Server MR !89](https://git.drupalcode.org/project/mcp_server/-/merge_requests/89) | SDK extension registration and native tool/resource metadata preservation |
-| [Tool API MR !206](https://git.drupalcode.org/project/tool/-/merge_requests/206) | Generic definition and execution-result metadata |
-| [MCP Server Tool Bridge MR !28](https://git.drupalcode.org/project/mcp_server_tool_bridge/-/merge_requests/28) | Forward only Tool API's `meta['mcp']` namespace into MCP definitions and results |
+| [MCP Server !89](https://git.drupalcode.org/project/mcp_server/-/merge_requests/89) | SDK extension registration and native metadata preservation |
+| [Tool API !206](https://git.drupalcode.org/project/tool/-/merge_requests/206) | Generic definition and execution-result metadata |
+| [MCP Server Tool Bridge !28](https://git.drupalcode.org/project/mcp_server_tool_bridge/-/merge_requests/28) | Forward Tool API's `meta['mcp']` namespace |
 
-Modules use native ResourceProvider and Tool API plugins. They do not replace the MCP server factory or implement JSON-RPC. Host iframe isolation remains the host's responsibility; WebMCP and hosted OpenUI services are not used.
+Native ResourceProvider and Tool API plugins own registration. This project does not replace the server factory or implement JSON-RPC. WebMCP and hosted OpenUI services are not used.
+
+Commerce MCP was investigated before building adapters; its public repository advertised no branches at implementation time. The demo uses Commerce Core's existing services rather than a second commerce engine.
 
 ## Development and tests
 
-The bundled HTML is shipped with the module; production needs no Node server. To rebuild reproducibly:
+Production needs no Node server. Rebuild the shipped bundles reproducibly:
 
 ```sh
 cd web/modules/contrib/mcp_apps
@@ -198,39 +130,26 @@ npm ci
 npm run build
 ```
 
-With Drupal core-dev and the usual PHPUnit database/base URL configuration:
+Install Drupal core-dev matching your core version and Commerce for the demo tests. Configure PHPUnit's database and base URL, then run:
 
 ```sh
 vendor/bin/phpunit web/modules/contrib/mcp_apps/tests/src
-DRUPAL_BASE_URL=https://YOUR-DRUPAL-HOST python3 web/modules/contrib/mcp_apps/tests/protocol_smoke.py
+python3 web/modules/contrib/mcp_apps/tests/protocol_smoke.py
 vendor/bin/drush php:script web/modules/contrib/mcp_apps/tests/composer_smoke.php
+vendor/bin/drush php:script web/modules/contrib/mcp_apps/tests/commerce_smoke.php
 cd web/modules/contrib/mcp_apps
 npm run test:ui
+npm run test:commerce
 ```
 
-The protocol smoke uses the local Drush `admin` account (`DRUPAL_USER` overrides it); this is separate from HTTP OAuth verification. The UI smoke uses the actual bundle and SDK with a simulated host and a fixture generated from native Drupal rendering. Tests cover two independent apps, permissions, account isolation, standalone SDC rendering without Canvas, nested slots, schema errors, Media/field/private-file access, asset transport, responsive controls, and last-valid-preview behavior.
+The protocol smoke uses Drush's local `admin` account (`DRUPAL_USER` overrides it). It exercises the real PHP SDK transport; it is separate from HTTP OAuth verification. Frontend tests use the shipped bundles, official MCP Apps SDK and fixtures generated by native Drupal rendering.
 
-To run the optional Byte comparison through the same smoke tests, set
-`MCP_APPS_PREVIEW_THEME=byte_theme` for the protocol and PHP smoke scripts.
-Set `MCP_APPS_UI_FIXTURE=/tmp/mcp-composer-byte-fixture.json` when generating the
-Byte fixture and running `npm run test:ui` to retain the Mercury fixture.
-
-With `mcp_apps_activity_demo` enabled, run its independent protocol and UI smoke:
-
-```sh
-python3 web/modules/contrib/mcp_apps/tests/activity_protocol_smoke.py
-vendor/bin/drush php:script web/modules/contrib/mcp_apps/tests/activity_smoke.php
-cd web/modules/contrib/mcp_apps
-npm run test:activity
-```
-
-Its Drupal tests cover permissions, invalid filters, cross-account sessions,
-CSRF protection, and native rendering without Canvas. The UI test covers the
-official SDK handshake, filtering, sequential asset calls, errors, responsive
-widths, cancellation, and source-checked iframe sizing.
+Tests cover independent app registration, SDC schemas and asset boundaries, permission and field denials, account isolation, real Commerce carts, unavailable variations, stale prices, test-only gateways, rollback, repeated checkout, CSRF, SDK initialization and app actions.
 
 ## Licenses and credits
 
-The module's code is GPL-2.0-or-later. OpenUI is MIT licensed; its full notice and bundled dependency notices are retained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Mercury supplies the showcase component templates and styles; they are generated from its starterkit rather than copied into this module. The optional Byte comparison uses the unmodified components and assets from the Composer-installed Byte theme, which retains its own licenses and credits.
+Module code and the original SVG product illustrations are **GPL-2.0-or-later**. Codex assisted in producing the SVG source. No stock product photographs or third-party theme component templates are bundled in the Commerce demo.
 
-The six photographs are licensed separately under the [Unsplash License](https://unsplash.com/license). Copyright remains with **Arnout van Nieuwkoop, Alexander Psiuk, micheile henderson, Roel Oosterwijk, Ufoma Ojo, and Mitchell Leach**. The photographs were not AI generated. Preserve their individual credits and source links in [the image license file](modules/mcp_apps_demo/assets/LICENSE.md) and [manifest](modules/mcp_apps_demo/assets/manifest.json) when redistributing this demo.
+OpenUI is MIT licensed. Full notices for the locally bundled frontend dependencies are retained in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The installed site theme keeps its own licenses and supplies the native preview's fonts and base styles.
+
+Historical showcase screenshots remain under `docs/screenshots`. The retired sample photography and its original credits remain recoverable in Git history; existing imported Media files are preserved on the site.

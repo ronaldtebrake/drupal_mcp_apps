@@ -1,0 +1,8 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - mcp_apps_commerce_demo
+id: commerce_demo_cart_update
+tool_id: 'commerce_demo_cart_update'
+description: null

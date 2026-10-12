@@ -1,0 +1,4 @@
+name: MCP Apps Commerce access fixtures
+type: module
+package: Testing
+core_version_requirement: ^11.4

@@ -69,6 +69,10 @@ final class CompositionTest extends KernelTestBase {
     $preview = $composer->preview($id, $tree);
     $this->assertStringContainsString('panel-quiet', $preview['ui']['html']);
     $this->assertStringContainsString('<p>Native nested Twig</p>', $preview['ui']['html']);
+    $tree[0]['slots']['content'][0]['props']['text'] = 'Coffee & care';
+    $this->assertStringContainsString('Coffee &amp; care', $composer->preview($id, $tree)['ui']['html']);
+    $tree[0]['slots']['content'] = [];
+    $this->assertStringContainsString('panel-quiet', $composer->preview($id, $tree)['ui']['html']);
     $this->assertNotEmpty($preview['ui']['assets']);
     $asset = array_key_first($preview['ui']['assets']);
     $this->assertNotEmpty($composer->asset($id, $asset, 0)['ui']['base64']);

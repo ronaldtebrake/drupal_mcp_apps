@@ -63,7 +63,7 @@ final class ComposerPreviewController extends ControllerBase {
       return new JsonResponse(['error' => 'Use a JSON object with named arguments.'], 400);
     }
     $name = $input['name'] ?? '';
-    if (!in_array($name, ['component_composer_preview', 'component_composer_asset', 'composer_media_search'], TRUE)) {
+    if (!in_array($name, ['component_composer_preview', 'component_composer_asset'], TRUE)) {
       return new JsonResponse(['error' => 'Unsupported preview operation.'], 400);
     }
     try {

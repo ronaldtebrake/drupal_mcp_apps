@@ -12,7 +12,7 @@ if url:
     command.append('--uri=' + url)
 process = subprocess.Popen(command, cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
 sequence = 0
-theme = os.environ.get('MCP_APPS_PREVIEW_THEME', 'mcp_apps_demo_theme')
+theme = os.environ.get('MCP_APPS_PREVIEW_THEME', '')
 
 def request(method, params):
     global sequence
@@ -53,31 +53,43 @@ try:
     assert tools['tool_api__component_composer_preview']['_meta']['ui']['visibility'] == ['app']
     assert tools['tool_api__component_composer_open']['annotations']['readOnlyHint'] is True
     assert not any(name in tools for name in ['tool_api__media_picker_open', 'tool_api__media_picker_save_hero', 'canvas_composer_open', 'content_atlas_open'])
+    assert not any(name in tools for name in ['tool_api__editorial_activity', 'tool_api__activity_dashboard_open', 'tool_api__composer_media_search'])
+    shop_uri = 'ui://drupal/commerce-shop'
+    assert tools['tool_api__commerce_shop_open']['_meta']['ui']['resourceUri'] == shop_uri
+    assert tools['tool_api__commerce_shop_checkout']['_meta']['ui']['visibility'] == ['app']
+    assert tools['tool_api__commerce_demo_checkout']['annotations']['readOnlyHint'] is False
+    shop_resource = request('resources/read', {'uri': shop_uri})['contents'][0]
+    assert shop_resource['mimeType'] == 'text/html;profile=mcp-app'
+    assert shop_resource['_meta']['ui']['csp']['connectDomains'] == []
+    assert 'id="app"' in shop_resource['text']
     resource = request('resources/read', {'uri': uri})['contents'][0]
     assert resource['mimeType'] == 'text/html;profile=mcp-app'
     assert resource['_meta']['ui']['csp']['connectDomains'] == []
     assert 'id="app"' in resource['text']
     opened = call('component_composer_open', {'theme': theme})
     ui = opened['_meta']['ui']
-    assert ui['tree'] and ui['catalog']
+    assert ui['catalog']
+    shopping = call('commerce_shop_open', {'category': 'grinders', 'budget': 150})['_meta']['ui']
+    assert shopping['tree'][0]['props']['comparing'] is True
+    assert all(node['props']['show_details'] for node in shopping['tree'][0]['slots']['products'])
+    legacy = call('commerce_shop_filter', {'session_id': shopping['session_id'], 'category': 'grinders', 'budget': 150})
+    assert legacy['_meta']['ui']['view'] == 'catalog'
+    ui['tree'] = shopping['tree']
     assert 'catalog' not in opened['structuredContent']['data']
-    catalog = call('sdc_component_catalog', {'provider': theme})
+    catalog = call('sdc_component_catalog', {'provider': 'mcp_apps_commerce_demo'})
     assert catalog['structuredContent'], catalog
     preview = call('component_composer_preview', {'session_id': ui['session_id'], 'composition': json.dumps(ui['tree'])})
     assert preview['structuredContent']['data']['valid'] is True
     assert 'html' not in preview['structuredContent']['data']
-    assert 'Rotterdam' in preview['_meta']['ui']['html']
+    assert 'Studio hand grinder' in preview['_meta']['ui']['html']
     assets = preview['_meta']['ui']['assets']
     assert assets
     asset = call('component_composer_asset', {'session_id': ui['session_id'], 'asset_id': next(iter(assets)), 'offset': 0})
     assert asset['_meta']['ui']['base64']
     assert 'base64' not in asset['structuredContent']['data']
-    media = call('composer_media_search', {'query': 'Rotterdam'})
-    assert media['structuredContent']['data']['media']
-    assert all(value.startswith('data:image/') for value in media['_meta']['ui']['thumbnails'].values())
     invalid = request('tools/call', {'name': 'tool_api__component_composer_preview', 'arguments': {'session_id': ui['session_id'], 'composition': '[{"component":"missing:component"}]'}})
     assert invalid['isError']
-    print(f'PASS ({theme}): actual MCP extension, tool metadata, app resource, OpenUI preview, bounded assets, Media and rejected input.')
+    print(f'PASS ({theme}): actual MCP extension, tool metadata, app resource, OpenUI preview, bounded assets and rejected input.')
 finally:
     process.terminate()
     try:

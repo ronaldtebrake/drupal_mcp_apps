@@ -1,0 +1,39 @@
+name: 'Commerce shop'
+description: 'Shared native Drupal shop component for the website and MCP App.'
+status: experimental
+props:
+  type: object
+  required:
+    - query
+    - category
+    - budget
+    - count
+  properties:
+    query:
+      type: string
+    category:
+      type: string
+    budget:
+      type: number
+    count:
+      type: integer
+    comparing:
+      type: boolean
+    view:
+      type: string
+      enum: [catalog, basket]
+slots:
+  products:
+    title: products
+  comparison:
+    title: comparison
+  basket:
+    title: basket
+  summary:
+    title: 'Compact basket summary'
+  receipt:
+    title: receipt
+libraryOverrides:
+  dependencies:
+    - mcp_apps_commerce_demo/design
+    - mcp_apps_commerce_demo/components

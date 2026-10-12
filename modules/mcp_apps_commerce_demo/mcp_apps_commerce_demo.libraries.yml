@@ -1,0 +1,19 @@
+design:
+  css:
+    theme:
+      css/shop.css: {}
+storefront:
+  css:
+    theme:
+      css/storefront.css: {}
+  dependencies:
+    - mcp_apps_commerce_demo/design
+components:
+  js:
+    js/components.js: {}
+website:
+  js:
+    dist/website.js: {}
+  dependencies:
+    - core/drupalSettings
+    - mcp_apps_commerce_demo/components

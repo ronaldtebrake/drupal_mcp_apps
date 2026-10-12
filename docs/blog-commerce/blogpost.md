@@ -157,11 +157,11 @@ The shop is also available as a normal Drupal page at `/shop`.
 
 ![Normal Drupal page displaying the same two coffee grinders and expanded specifications under the €150 budget filter](./assets/02-commerce-shop-drupal.jpg)
 
-*The same product SDCs on the Drupal website, with Grinders, a €150 budget and choice mode selected. The surrounding page layout belongs to the site's theme.*
+*The same product SDCs on the Drupal website, with Grinders, a €150 budget and choice mode selected. A dedicated storefront template gives the website roomier typography and navigation.*
 
 Both surfaces use the same Tool API operations, component mapping, Twig templates and attached component assets. The app receives a Drupal-rendered preview; the website puts the render array into a normal page.
 
-Their surrounding layouts are different. The website has the site's navigation and page wrapper, while the app has its host and compact controls. The demo components inherit the active theme's fonts and base styling, with their own CSS for the shop layout and palette.
+Their surrounding layouts are different. The website has a dedicated shop header, footer and responsive catalog layout, while the app has its host and compact controls. The demo components inherit the active theme's fonts and base styling, with their own CSS for the shop layout and palette. The storefront template is scoped to `/shop` and can be overridden by a theme.
 
 The basket is shared when both connections use the same Drupal account. It is not copied into a separate app store.
 

@@ -1,0 +1,19 @@
+mcp_apps_commerce_demo.shop:
+  path: '/shop'
+  defaults:
+    _controller: '\Drupal\mcp_apps_commerce_demo\Controller\ShopController::page'
+    _title: 'Fieldwork Supply'
+  requirements:
+    _permission: 'use mcp apps commerce demo'
+    _user_is_logged_in: 'TRUE'
+  options:
+    _admin_route: FALSE
+mcp_apps_commerce_demo.action:
+  path: '/shop/action'
+  defaults:
+    _controller: '\Drupal\mcp_apps_commerce_demo\Controller\ShopController::action'
+  methods: [POST]
+  requirements:
+    _permission: 'use mcp apps commerce demo'
+    _user_is_logged_in: 'TRUE'
+    _csrf_request_header_token: 'TRUE'

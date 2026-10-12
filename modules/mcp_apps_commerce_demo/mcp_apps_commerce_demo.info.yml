@@ -1,0 +1,11 @@
+name: MCP Apps Commerce demo
+type: module
+description: 'A shared Drupal shopping interface and MCP App using Commerce and OpenUI.'
+package: MCP
+core_version_requirement: ^11.4
+dependencies:
+  - mcp_apps:mcp_apps_openui
+  - commerce:commerce_product
+  - commerce:commerce_cart
+  - commerce:commerce_checkout
+  - commerce:commerce_payment

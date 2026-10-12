@@ -1,4 +1,0 @@
-services:
-  mcp_apps_demo.media:
-    class: Drupal\mcp_apps_demo\MediaLibrary
-    arguments: ['@entity_type.manager', '@mcp_apps_openui.composition', '@image.factory', '@state']

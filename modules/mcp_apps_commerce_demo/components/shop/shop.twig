@@ -1,0 +1,19 @@
+<section class="fieldwork-shop" aria-label="Fieldwork Supply">
+  {% if view|default('catalog') == 'catalog' %}
+    <form class="shop-filters" data-shop-form="filter">
+      <label>Search<input name="query" type="search" value="{{ query }}" placeholder="Search coffee gear…"></label>
+      <label>Collection<select name="category"><option value="all" {{ category == 'all' ? 'selected' }}>All coffee gear</option><option value="grinders" {{ category == 'grinders' ? 'selected' }}>Grinders</option><option value="brewing" {{ category == 'brewing' ? 'selected' }}>Brewing</option><option value="accessories" {{ category == 'accessories' ? 'selected' }}>Accessories</option></select></label>
+      <label>Budget in €<input name="budget" type="number" min="0" max="1000" step="1" value="{{ budget }}" title="0 means no limit"></label>
+      <button type="button" data-shop-submit class="shop-button">Find <span>↗</span></button>
+    </form>
+    {{ comparison }}
+    <div class="shop-results"><span>{{ count }} {{ count == 1 ? 'product' : 'products' }}{{ comparing ? ' · Compare the details below' }}</span></div>
+    <div class="shop-products">{{ products }}</div>
+    {% if count == 0 %}<p class="shop-empty">No matching gear. Try another collection or budget.</p>{% endif %}
+    {{ summary }}
+  {% else %}
+    <button type="button" class="shop-text-button shop-back" data-shop-view="catalog">← Back to products</button>
+    {{ receipt }}
+    {{ basket }}
+  {% endif %}
+</section>
